@@ -5,6 +5,7 @@ import { formatMoney } from '../engine/money';
 import { missionProgress, progressContext } from '../engine/progress';
 import { OfflineModal, Toasts } from './components/common';
 import { NavContext, useGame } from './context';
+import { dismissInstallHint, shouldShowInstallHint } from './pwa';
 import { BusinessTab } from './tabs/BusinessTab';
 import { HomeTab } from './tabs/HomeTab';
 import { MarketTab } from './tabs/MarketTab';
@@ -31,6 +32,7 @@ function readTab(): TabId {
 export function App() {
   const { s, store } = useGame();
   const [tab, setTab] = useState<TabId>(readTab);
+  const [installHint, setInstallHint] = useState(shouldShowInstallHint);
 
   useEffect(() => {
     const onHash = () => setTab(readTab());
@@ -93,6 +95,32 @@ export function App() {
         </nav>
 
         <main>
+          {installHint && tab === 'inicio' && (
+            <div className="card guide install-hint" role="note">
+              <div className="row between">
+                <div className="step">Instale no iPhone</div>
+                <button
+                  className="btn ghost small"
+                  aria-label="Fechar dica de instalação"
+                  onClick={() => {
+                    dismissInstallHint();
+                    setInstallHint(false);
+                  }}
+                >
+                  Fechar
+                </button>
+              </div>
+              <ol className="small" style={{ margin: '6px 0 0', paddingLeft: 18 }}>
+                <li>
+                  Toque em <strong>Compartilhar</strong> (quadrado com seta para cima) na barra do Safari.
+                </li>
+                <li>
+                  Escolha <strong>Adicionar à Tela de Início</strong> e toque em <strong>Adicionar</strong>.
+                </li>
+                <li>Abra pelo ícone novo: tela cheia, funciona sem internet e o progresso fica salvo.</li>
+              </ol>
+            </div>
+          )}
           {tab === 'inicio' && <HomeTab />}
           {tab === 'negocios' && <BusinessTab />}
           {tab === 'bolsa' && <MarketTab key="stock" kind="stock" />}

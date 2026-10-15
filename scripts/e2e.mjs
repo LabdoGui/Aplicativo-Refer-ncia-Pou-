@@ -171,6 +171,28 @@ try {
   await p4.waitForTimeout(300);
   await p4.screenshot({ path: `${shotsDir}/08-imoveis.png` });
 
+  // PWA: manifesto válido, service worker ativo e jogo abrindo SEM internet com o progresso salvo.
+  const pwaCtx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const pw = await pwaCtx.newPage();
+  await pw.goto(URL);
+  await pw.waitForSelector('.bank-card');
+  const manifest = await pw.evaluate(async () => (await fetch(document.querySelector('link[rel=manifest]').href)).json());
+  check(manifest.display === 'standalone' && manifest.icons.length >= 2, 'manifesto do app válido (tela cheia, ícones)');
+  await pw.evaluate(() => navigator.serviceWorker.ready);
+  await pw.reload();
+  await pw.waitForSelector('.bank-card');
+  check(await pw.evaluate(() => !!navigator.serviceWorker.controller), 'service worker ativo');
+  for (let i = 0; i < 7; i++) await pw.locator('.tap-btn').click();
+  await pw.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
+  await pw.waitForTimeout(600);
+  const onlineBal = await pw.locator('.bank-card .balance').innerText();
+  await pwaCtx.setOffline(true);
+  await pw.reload();
+  await pw.waitForSelector('.bank-card', { timeout: 8000 });
+  const offlineBal = await pw.locator('.bank-card .balance').innerText();
+  check(offlineBal === onlineBal, `abre sem internet com o progresso salvo (${onlineBal} → ${offlineBal})`);
+  await pwaCtx.close();
+
   check(errors.length === 0, `sem erros de console${errors.length ? ': ' + errors.join(' | ') : ''}`);
 } catch (e) {
   console.error(e);

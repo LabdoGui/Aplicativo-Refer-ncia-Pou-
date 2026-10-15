@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './ui/App';
 import { StoreContext } from './ui/context';
+import { registerServiceWorker, requestPersistentStorage } from './ui/pwa';
 import { GameStore, acquireSingleTabLock } from './ui/store';
 import './ui/styles.css';
 
@@ -52,4 +53,6 @@ async function start() {
   }
 }
 
+registerServiceWorker();
+requestPersistentStorage();
 void start();

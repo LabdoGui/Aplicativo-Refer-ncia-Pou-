@@ -938,3 +938,7 @@ details > summary {
     animation-duration: 0.01s;
   }
 }
+
+.install-hint {
+  margin-bottom: 16px;
+}

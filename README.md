@@ -18,6 +18,18 @@ npm run sim -- 8 3 # simulador de balanceamento: 8 horas, 3 cliques/s
 
 O `e2e` usa `playwright-core` com o Chromium em `/opt/pw-browsers`; em outra máquina, defina `CHROMIUM_PATH` com o caminho do Chrome/Chromium.
 
+## Instalar no iPhone (PWA)
+
+O jogo é um app web instalável: depois de instalado, abre em tela cheia pelo ícone, funciona sem internet e guarda o progresso no aparelho.
+
+1. Abra o endereço do jogo no **Safari** (GitHub Pages: `https://labdogui.github.io/Aplicativo-Refer-ncia-Pou-/`).
+2. Toque em **Compartilhar** → **Adicionar à Tela de Início** → **Adicionar**.
+3. Abra sempre pelo ícone novo.
+
+Publicação: o workflow `.github/workflows/deploy.yml` testa, gera o app e publica na branch `gh-pages` a cada envio. No GitHub, em **Settings → Pages**, escolha *Deploy from a branch* → `gh-pages` / `(root)`. O GitHub Pages exige repositório público, ou o plano GitHub Pro para repositório privado.
+
+Detalhes técnicos: `public/manifest.webmanifest`, ícones em `public/icons/` (gerados por `npm run icons` a partir de `scripts/icon.svg`) e service worker gerado no build por `scripts/generate-sw.mjs`, que guarda todos os arquivos do app para uso offline.
+
 ## O que já funciona
 
 | Sistema | Detalhes |
@@ -112,5 +124,4 @@ A holding custa R$ 7 trilhões e exige escritório ou prédio comercial. O Legad
 - **Ordens limitadas e alertas de preço** (previstos como melhorias desbloqueáveis na bolsa).
 - **Endgame avançado**: participações em grandes empresas, fusões e aquisições, expansão internacional, grandes obras de infraestrutura, metas de "décadas econômicas" e ranking local. Hoje o endgame tem holding, conglomerado completo, resort de luxo, missões de longo prazo e Legado.
 - **Balanceamento fino** do fim de jogo e testes com jogadores reais.
-- **PWA instalável** (ícone na tela inicial e funcionamento sem internet após o primeiro acesso).
 - **Acessibilidade**: revisão completa com leitor de tela. Já existem rótulos ARIA, foco visível, clique pelo teclado, opção de reduzir movimento e sons desligados por padrão.
