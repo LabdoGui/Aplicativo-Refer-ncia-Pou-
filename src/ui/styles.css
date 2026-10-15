@@ -65,14 +65,15 @@ button {
 
 .topbar {
   position: sticky;
-  top: 0;
+  top: env(safe-area-inset-top, 0px);
   z-index: 20;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 10px 16px;
-  padding-top: max(10px, env(safe-area-inset-top));
+  padding-block: 10px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
   background: rgba(10, 13, 18, 0.88);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--border);
@@ -117,8 +118,10 @@ button {
 
 main {
   min-width: 0;
-  padding: 16px;
-  padding-bottom: calc(var(--nav-h) + 24px + env(safe-area-inset-bottom));
+  padding-top: 16px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-bottom: calc(var(--nav-h) + 24px + env(safe-area-inset-bottom, 0px));
   max-width: 960px;
   width: 100%;
   margin: 0 auto;
@@ -136,7 +139,9 @@ main {
   background: rgba(14, 18, 25, 0.96);
   backdrop-filter: blur(10px);
   border-top: 1px solid var(--border);
-  padding-bottom: env(safe-area-inset-bottom);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
 }
 .nav::-webkit-scrollbar {
   display: none;
@@ -211,8 +216,8 @@ main {
   }
   .nav {
     position: sticky;
-    top: 57px;
-    height: calc(100dvh - 57px);
+    top: calc(57px + env(safe-area-inset-top, 0px));
+    height: calc(100dvh - 57px - env(safe-area-inset-top, 0px));
     flex-direction: column;
     border-top: 0;
     border-right: 1px solid var(--border);
@@ -246,7 +251,10 @@ main {
     right: 14px;
   }
   main {
-    padding: 24px 32px 48px;
+    padding-top: 24px;
+    padding-bottom: 48px;
+    padding-left: max(32px, env(safe-area-inset-left, 0px));
+    padding-right: max(32px, env(safe-area-inset-right, 0px));
   }
 }
 

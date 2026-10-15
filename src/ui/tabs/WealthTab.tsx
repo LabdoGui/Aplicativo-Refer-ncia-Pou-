@@ -374,6 +374,17 @@ function SettingsSection() {
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
+  const [exported, setExported] = useState<string | null>(null);
+  const doCopy = async () => {
+    const text = store.saves.exportSave(s);
+    try {
+      await navigator.clipboard.writeText(text);
+      store.pushToast({ kind: 'success', title: 'Save copiado', detail: 'Cole em um lugar seguro (notas, e-mail) para restaurar depois.' });
+    } catch {
+      setExported(text); // sem acesso à área de transferência: mostra o texto para copiar manualmente
+    }
+  };
+
   const doImport = async (text: string) => {
     try {
       const next = await store.saves.importSave(text);
@@ -400,8 +411,11 @@ function SettingsSection() {
           <button className="btn" onClick={() => void store.save().then(() => store.pushToast({ kind: 'success', title: 'Jogo salvo' }))}>
             Salvar agora
           </button>
+          <button className="btn" onClick={doCopy}>
+            Copiar save
+          </button>
           <button className="btn" onClick={doExport}>
-            Exportar save
+            Baixar arquivo
           </button>
           <button className="btn" onClick={() => fileRef.current?.click()}>
             Importar arquivo
@@ -418,9 +432,17 @@ function SettingsSection() {
             }}
           />
         </div>
+        {exported && (
+          <div>
+            <label className="small muted" htmlFor="export-text">
+              Selecione e copie o texto abaixo:
+            </label>
+            <textarea id="export-text" readOnly value={exported} onFocus={(e) => e.currentTarget.select()} />
+          </div>
+        )}
         <details>
           <summary>Colar save como texto</summary>
-          <textarea value={importText} onChange={(e) => setImportText(e.target.value)} placeholder="Cole aqui o conteúdo exportado" />
+          <textarea id="import-text" value={importText} onChange={(e) => setImportText(e.target.value)} placeholder="Cole aqui o conteúdo exportado" />
           <button className="btn" style={{ marginTop: 8 }} disabled={!importText.trim()} onClick={() => doImport(importText)}>
             Importar texto
           </button>
