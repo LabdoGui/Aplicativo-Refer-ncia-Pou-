@@ -356,6 +356,15 @@ function StatsSection() {
   );
 }
 
+/** Dentro de um frame incorporado (ex.: página publicada) downloads são bloqueados; nesse caso só "Copiar save" aparece. */
+const canDownload = (() => {
+  try {
+    return window.top === window.self;
+  } catch {
+    return false;
+  }
+})();
+
 function SettingsSection() {
   const { s, dispatch, store } = useGame();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -414,9 +423,11 @@ function SettingsSection() {
           <button className="btn" onClick={doCopy}>
             Copiar save
           </button>
-          <button className="btn" onClick={doExport}>
-            Baixar arquivo
-          </button>
+          {canDownload && (
+            <button className="btn" onClick={doExport}>
+              Baixar arquivo
+            </button>
+          )}
           <button className="btn" onClick={() => fileRef.current?.click()}>
             Importar arquivo
           </button>
