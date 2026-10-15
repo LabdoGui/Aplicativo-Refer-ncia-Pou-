@@ -76,12 +76,29 @@ export class LocalStorageStorage implements SaveStorage {
   }
 }
 
+/** Rejeita se a promessa não terminar no prazo (alguns visualizadores deixam o IndexedDB pendurado). */
+export function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const t = setTimeout(() => reject(new Error('Tempo esgotado')), ms);
+    p.then(
+      (v) => {
+        clearTimeout(t);
+        resolve(v);
+      },
+      (e) => {
+        clearTimeout(t);
+        reject(e);
+      },
+    );
+  });
+}
+
 /** Escolhe o melhor armazenamento disponível no navegador. */
 export async function createBrowserStorage(): Promise<SaveStorage> {
   if (typeof indexedDB !== 'undefined') {
     try {
       const s = new IndexedDBStorage();
-      await s.get('__probe__');
+      await withTimeout(s.get('__probe__'), 2500);
       return s;
     } catch {
       /* cai para localStorage (ex.: navegação privada em alguns navegadores) */

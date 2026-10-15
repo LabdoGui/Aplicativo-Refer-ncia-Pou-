@@ -5,9 +5,9 @@
 import { dispatch as engineDispatch, type Action, type ActionResult } from '../engine/actions';
 import { advance, applyOffline, newGame, type OfflineReport } from '../engine/simulation';
 import type { GameState, Notice } from '../engine/types';
-import { SaveManager } from '../save/saveManager';
+import { SaveManager, type LoadResult } from '../save/saveManager';
 import { deserializeState, serializeState } from '../save/serialize';
-import { createBrowserStorage } from '../save/storage';
+import { MemoryStorage, createBrowserStorage, withTimeout } from '../save/storage';
 import { playSound } from './sound';
 
 export interface Toast extends Notice {
@@ -38,8 +38,15 @@ export class GameStore {
 
   static async boot(): Promise<GameStore> {
     const storage = await createBrowserStorage();
-    const mgr = new SaveManager(storage);
-    const loaded = await mgr.load();
+    let mgr = new SaveManager(storage);
+    let loaded: LoadResult;
+    try {
+      loaded = await withTimeout(mgr.load(), 4000);
+    } catch {
+      // O armazenamento não respondeu: joga só em memória para NUNCA sobrescrever o save existente.
+      mgr = new SaveManager(new MemoryStorage());
+      loaded = { state: null, source: 'none', warnings: ['O armazenamento não respondeu: esta partida não será salva. Seu salvamento anterior não foi alterado.'] };
+    }
     let state = loaded.state;
     const warnings = [...loaded.warnings];
 
@@ -56,7 +63,7 @@ export class GameStore {
     } catch {
       /* cópia de emergência ilegível: ignorada (a principal continua valendo) */
     }
-    if (storage.kind === 'memória') warnings.push('Este navegador não permite salvar dados: o progresso será perdido ao fechar.');
+    if (mgr.storage.kind === 'memória' && storage.kind === 'memória') warnings.push('Este navegador não permite salvar dados: o progresso será perdido ao fechar.');
 
     const store = new GameStore(state ?? newGame(), mgr);
     store.loadWarnings = warnings;
@@ -65,7 +72,8 @@ export class GameStore {
       if (report && (report.creditedMs > 0 || report.clockWentBack)) store.offlineReport = report;
     }
     store.drainNotices();
-    await store.save();
+    // Não espera a gravação para mostrar o jogo (o autosave tenta de novo em seguida).
+    void withTimeout(store.save(), 4000).catch(() => undefined);
     return store;
   }
 
@@ -202,6 +210,8 @@ export function acquireSingleTabLock(): Promise<boolean> {
   const locks = (navigator as Navigator & { locks?: LockManager }).locks;
   if (!locks) return Promise.resolve(true);
   return new Promise((resolve) => {
+    // Em visualizadores restritos o pedido pode nunca responder: não deixa o jogo travado.
+    setTimeout(() => resolve(true), 1500);
     locks
       .request('tycoon-empire-game', { ifAvailable: true }, (lock) => {
         if (!lock) {

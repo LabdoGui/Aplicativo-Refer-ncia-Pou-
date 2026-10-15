@@ -5,7 +5,8 @@ import { StoreContext } from './ui/context';
 import { GameStore, acquireSingleTabLock } from './ui/store';
 import './ui/styles.css';
 
-const root = createRoot(document.getElementById('root')!);
+const rootEl = document.getElementById('root')!;
+const root = createRoot(rootEl);
 
 function Message({ title, text }: { title: string; text: string }) {
   return (
