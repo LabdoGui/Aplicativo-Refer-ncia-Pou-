@@ -75,7 +75,7 @@ flowchart LR
 | Frontend | React + TypeScript + Vite, Tailwind CSS v4, React Router, TanStack Query, React Hook Form + Zod, Recharts, lucide-react | Uma SPA para os 3 perfis, layouts por perfil |
 | Back-end | Node.js 22 + NestJS 11 + TypeScript | Um app NestJS por serviço, em monorepo (npm workspaces) |
 | Validação | class-validator / class-transformer (DTOs → Swagger automático); Zod para variáveis de ambiente | |
-| ORM | Prisma 6 | Um `schema.prisma` por serviço, cliente gerado em `src/generated/prisma` |
+| ORM | Prisma 6 | Um `schema.prisma` por serviço, cliente gerado em `<serviço>/generated/prisma` (fora do `src`, para o mesmo caminho relativo valer em `src` e em `dist`) |
 | Banco | PostgreSQL 16 | 1 instância, 1 schema e 1 usuário por serviço |
 | Mensageria | RabbitMQ 3.13 + `amqplib`/`amqp-connection-manager` | Consistente com a proposta do CP1 |
 | Autenticação | `jose` (JWT RS256 + JWKS), `@node-rs/argon2` (hash Argon2id) | |
@@ -85,7 +85,7 @@ flowchart LR
 | Testes | Jest (unidade e integração), script E2E da jornada via API, Playwright para a jornada na interface | |
 | Infra | Docker, Docker Compose, nginx | `docker compose up --build` |
 
-**Redis:** não é necessário no MVP. Rate limit em memória no gateway (`@nestjs/throttler`) basta para uma instância. Entra na V2 se houver várias réplicas do gateway.
+**Redis:** não é necessário no MVP. O rate limit do gateway é um middleware próprio em memória (janela fixa por IP, testado com relógio injetado), suficiente para uma instância. Redis entra na V2 se houver várias réplicas do gateway.
 
 ---
 
@@ -99,7 +99,7 @@ flowchart LR
 - `GET /dashboard/statistics?from&to&unitId&bloodType` [ADMIN] — composição.
 - `GET /dashboard/public-stats` [público] — indicadores agregados para a tela inicial.
 - `GET /audit-logs` [ADMIN] — composição das auditorias dos serviços.
-- `GET /docs` — índice da documentação Swagger de todos os serviços.
+- `GET /api/docs` (Swagger UI) e `GET /api/docs-json` — documentação OpenAPI **unificada**, montada a partir do `/docs-json` de cada serviço.
 
 ### identity (:3001)
 `POST /auth/register` · `POST /auth/login` · `POST /auth/refresh` · `POST /auth/logout` · `GET /users/me` · `PATCH /users/me` · `PATCH /users/me/password` · `GET /donors/me` · `GET /donors/:id` [COLLABORATOR, NURSE, ADMIN; auditado] · `GET /consents/me` · `PUT /consents/me` · `GET /admin/users` · `POST /admin/users` · `PATCH /admin/users/:id` [ADMIN] · `GET /.well-known/jwks.json` [público] · `GET /internal/stats`
@@ -190,10 +190,10 @@ Cada serviço segue a mesma organização:
 ```
 services/<nome>/
 ├─ prisma/{schema.prisma,migrations/,seed.ts}
+├─ generated/prisma/             cliente Prisma (gerado, fora do git)
 └─ src/
    ├─ main.ts                    bootstrap via @pulso/common
    ├─ app.module.ts
-   ├─ generated/prisma/          cliente Prisma (gerado, fora do git)
    ├─ prisma/prisma.service.ts
    └─ modules/<domínio>/{*.controller.ts,*.service.ts,dto/,*.spec.ts}
 ```
@@ -263,7 +263,7 @@ sequenceDiagram
 | Risco | Mitigação |
 |---|---|
 | Complexidade de 7 processos para uma equipe de estudantes | Lib comum (`@pulso/common`) concentra bootstrap, auth, logs, erros e mensageria; cada serviço tem só domínio |
-| Cliente Prisma colidindo entre serviços no monorepo | `output` customizado por serviço (`src/generated/prisma`) |
+| Cliente Prisma colidindo entre serviços no monorepo | `output` customizado por serviço (`<serviço>/generated/prisma`) |
 | Eventos perdidos ou duplicados | Outbox transacional + consumidor idempotente + DLQ |
 | Fuso horário nos horários (slots) | Horários da grade em hora local (`America/Sao_Paulo`), armazenamento em UTC, biblioteca Luxon |
 | Sobrealocação de vagas | UPDATE condicional atômico + índice único parcial + teste de concorrência |

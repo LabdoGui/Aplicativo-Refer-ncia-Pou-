@@ -1,0 +1,17 @@
+// Schema "inventory" — banco de sangue: estoque central e movimentações.
+// Os modelos de domínio entram na Fase 2 (docs/16-plano-de-implementacao.md, item 5).
+// Tabelas previstas:
+//   - blood_stock: estoque por tipo sanguíneo (PK = tipo; quantidade, mínimo, ideal)
+//   - blood_stock_movements: movimentações IN/OUT (quantidade > 0, motivo, responsável, saldo após)
+//   - audit_logs: trilha de auditoria
+//   - outbox_events: outbox transacional de eventos
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}

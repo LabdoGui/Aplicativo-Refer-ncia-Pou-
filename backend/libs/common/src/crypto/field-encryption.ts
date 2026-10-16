@@ -1,6 +1,9 @@
 import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
 
 const VERSION = 'v1';
+const ALGORITHM = 'aes-256-gcm';
+/** Tag de autenticação sempre com 16 bytes: tags truncadas enfraquecem a integridade. */
+const AUTH_TAG_LENGTH = 16;
 
 /**
  * Cifragem de campos sensíveis na aplicação (AES-256-GCM).
@@ -19,20 +22,32 @@ export class FieldEncryption {
 
   encrypt(plaintext: string): string {
     const iv = randomBytes(12);
-    const cipher = createCipheriv('aes-256-gcm', this.key, iv);
+    const cipher = createCipheriv(ALGORITHM, this.key, iv, { authTagLength: AUTH_TAG_LENGTH });
     const content = Buffer.concat([cipher.update(plaintext, 'utf8'), cipher.final()]);
     const tag = cipher.getAuthTag();
-    return [VERSION, iv.toString('base64'), tag.toString('base64'), content.toString('base64')].join(':');
+    return [
+      VERSION,
+      iv.toString('base64'),
+      tag.toString('base64'),
+      content.toString('base64'),
+    ].join(':');
   }
 
   decrypt(payload: string): string {
-    const [version, iv, tag, content] = payload.split(':');
-    if (version !== VERSION || !iv || !tag || !content) {
+    const parts = payload.split(':');
+    const [version, iv, tag, content] = parts;
+    // O conteúdo pode ser vazio (texto vazio cifrado); só a quantidade de partes é obrigatória.
+    if (parts.length !== 4 || version !== VERSION || !iv || !tag) {
       throw new Error('Formato de campo cifrado desconhecido');
     }
-    const decipher = createDecipheriv('aes-256-gcm', this.key, Buffer.from(iv, 'base64'));
+    const decipher = createDecipheriv(ALGORITHM, this.key, Buffer.from(iv, 'base64'), {
+      authTagLength: AUTH_TAG_LENGTH,
+    });
     decipher.setAuthTag(Buffer.from(tag, 'base64'));
-    return Buffer.concat([decipher.update(Buffer.from(content, 'base64')), decipher.final()]).toString('utf8');
+    return Buffer.concat([
+      decipher.update(Buffer.from(content, 'base64')),
+      decipher.final(),
+    ]).toString('utf8');
   }
 
   encryptJson(value: unknown): string {

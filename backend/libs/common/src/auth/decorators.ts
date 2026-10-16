@@ -27,6 +27,8 @@ export const CurrentUser = createParamDecorator(
 
 /** Injeta o id da requisição (propagado pelo gateway em x-request-id). */
 export const RequestId = createParamDecorator((_data: unknown, context: ExecutionContext) => {
-  const request = context.switchToHttp().getRequest<{ id?: string; headers: Record<string, string> }>();
+  const request = context
+    .switchToHttp()
+    .getRequest<{ id?: string; headers: Record<string, string> }>();
   return request.id ?? request.headers['x-request-id'];
 });

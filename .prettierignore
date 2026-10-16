@@ -3,6 +3,6 @@ dist
 coverage
 backend/services/*/generated
 backend/services/*/prisma/migrations
-docs
+/docs
 *.md
 package-lock.json

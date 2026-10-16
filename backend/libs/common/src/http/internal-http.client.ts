@@ -33,18 +33,32 @@ export class InternalHttpClient {
 
     let response: Response;
     try {
-      response = await fetch(url, { headers, signal: AbortSignal.timeout(options.timeoutMs ?? 3000) });
+      response = await fetch(url, {
+        headers,
+        signal: AbortSignal.timeout(options.timeoutMs ?? 3000),
+      });
     } catch (error) {
       this.logger.error({ err: error, url: url.toString() }, 'Falha na chamada interna');
-      throw new AppException(503, 'UPSTREAM_UNAVAILABLE', 'Um serviço necessário está temporariamente indisponível. Tente novamente em instantes.');
+      throw new AppException(
+        503,
+        'UPSTREAM_UNAVAILABLE',
+        'Um serviço necessário está temporariamente indisponível. Tente novamente em instantes.',
+      );
     }
 
     if (response.status === 404) {
       throw new AppException(404, 'NOT_FOUND', 'O recurso solicitado não foi encontrado.');
     }
     if (!response.ok) {
-      this.logger.error({ url: url.toString(), status: response.status }, 'Chamada interna retornou erro');
-      throw new AppException(503, 'UPSTREAM_ERROR', 'Um serviço necessário respondeu com erro. Tente novamente em instantes.');
+      this.logger.error(
+        { url: url.toString(), status: response.status },
+        'Chamada interna retornou erro',
+      );
+      throw new AppException(
+        503,
+        'UPSTREAM_ERROR',
+        'Um serviço necessário respondeu com erro. Tente novamente em instantes.',
+      );
     }
     return (await response.json()) as T;
   }

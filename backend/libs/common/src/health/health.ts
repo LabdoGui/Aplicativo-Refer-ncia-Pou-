@@ -60,7 +60,9 @@ export class HealthController {
   @ApiServiceUnavailableResponse({ description: 'Alguma dependência está indisponível' })
   async check(@Res({ passthrough: true }) response: Response): Promise<HealthCheckResult> {
     const results = await Promise.all(
-      this.indicators.map(async (indicator) => [indicator.name, await indicator.isHealthy()] as const),
+      this.indicators.map(
+        async (indicator) => [indicator.name, await indicator.isHealthy()] as const,
+      ),
     );
     const checks = Object.fromEntries(
       results.map(([name, healthy]) => [name, healthy ? 'up' : 'down']),

@@ -1,0 +1,25 @@
+// Schema "clinical" — pré-triagem, triagem presencial, doações e documentos (dados de saúde).
+// Os modelos de domínio entram na Fase 2 (docs/16-plano-de-implementacao.md, item 5).
+// Tabelas previstas:
+//   - screening_questions: perguntas da pré-triagem (etapa 1–6, tipo, opções)
+//   - screening_rule_sets: conjuntos de regras (versão, status, referência normativa, aprovação)
+//   - screening_rules: regras (pergunta, operador, valor, desfecho, validationStatus)
+//   - pre_screenings: pré-triagens (resultado, regras disparadas, respostas cifradas, consentimento, expiração)
+//   - professional_screening_fields: campos configuráveis da triagem presencial
+//   - professional_screenings: triagens presenciais (valores cifrados, resultado)
+//   - donations: doações (código único, status, profissional, unidade, campanha, nextEligibleAt)
+//   - documents: documentos emitidos (código de verificação com hash, sha256 do PDF)
+//   - clinical_settings: parâmetros configuráveis (chave/valor)
+//   - audit_logs: trilha de auditoria
+//   - outbox_events: outbox transacional de eventos
+//   - processed_events: idempotência dos consumidores
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}

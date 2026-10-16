@@ -1,0 +1,15 @@
+// Schema "notification" — central de notificações.
+// Os modelos de domínio entram na Fase 2 (docs/16-plano-de-implementacao.md, item 5).
+// Tabelas previstas:
+//   - notifications: notificações (usuário ou papel-alvo, tipo, título, corpo, link, canal, readAt)
+//   - processed_events: idempotência dos consumidores
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}

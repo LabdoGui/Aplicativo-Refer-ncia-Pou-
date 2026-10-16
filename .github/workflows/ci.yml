@@ -1,0 +1,78 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test:
+    name: Build e testes
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v4
+
+      - name: Instalar o Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Conferir a formatação (Prettier)
+        run: npm run format:check
+
+      - name: Compilar bibliotecas, serviços, gateway e frontend
+        run: npm run build
+
+      - name: Rodar os testes
+        run: npm test
+
+  docker:
+    name: Imagens Docker e smoke test
+    # Só em push na main: o build das 8 imagens é a etapa mais demorada.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: build-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v4
+
+      - name: Instalar o Node.js 22 (para o smoke test)
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: Validar o docker-compose.yml
+        run: docker compose config -q
+
+      - name: Construir as imagens
+        run: docker compose build
+
+      - name: Subir o ambiente completo
+        run: docker compose up -d --wait --wait-timeout 180
+
+      - name: Smoke test pelo nginx
+        run: node scripts/smoke.mjs --timeout=120
+
+      - name: Estado e logs dos contêineres (em caso de falha)
+        if: failure()
+        run: |
+          docker compose ps
+          docker compose logs --no-color --tail=200
+
+      - name: Derrubar o ambiente
+        if: always()
+        run: docker compose down -v

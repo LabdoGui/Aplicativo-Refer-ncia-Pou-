@@ -1,0 +1,23 @@
+# Contexto de build do Docker: só o necessário para compilar as imagens.
+# Dependências e artefatos são sempre gerados dentro da imagem.
+**/node_modules
+**/dist
+**/coverage
+**/*.tsbuildinfo
+**/*.log
+backend/services/*/generated
+frontend/dist
+test-results
+playwright-report
+
+# Segredos locais nunca entram no contexto de build.
+.env
+.env.*
+!.env.example
+
+# Não são usados no build.
+.git
+.github
+data
+docs
+*.md

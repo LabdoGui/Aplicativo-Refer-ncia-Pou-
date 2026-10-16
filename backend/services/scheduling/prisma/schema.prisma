@@ -1,0 +1,22 @@
+// Schema "scheduling" — unidades de saúde, grade de horários, vagas, agendamentos e campanhas.
+// Os modelos de domínio entram na Fase 2 (docs/16-plano-de-implementacao.md, item 5).
+// Tabelas previstas:
+//   - health_units: unidades de coleta
+//   - schedule_rules: grade semanal (dia da semana, início, fim, duração do slot, capacidade)
+//   - slots: vagas (única por unidade + início; bookedCount <= capacity)
+//   - schedule_blocks: bloqueios de agenda
+//   - campaigns: campanhas de doação
+//   - appointments: agendamentos (código único; 1 ativo por doador via índice parcial)
+//   - audit_logs: trilha de auditoria
+//   - outbox_events: outbox transacional de eventos
+//   - processed_events: idempotência dos consumidores
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}

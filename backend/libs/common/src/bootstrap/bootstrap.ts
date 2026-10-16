@@ -26,7 +26,11 @@ export interface BootstrapOptions {
   configure?: (app: NestExpressApplication) => void | Promise<void>;
 }
 
-export function setupSwagger(app: INestApplication, options: SwaggerOptions, version: string): void {
+export function setupSwagger(
+  app: INestApplication,
+  options: SwaggerOptions,
+  version: string,
+): void {
   const document = SwaggerModule.createDocument(
     app,
     new DocumentBuilder()

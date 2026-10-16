@@ -34,7 +34,8 @@ const DEFAULTS: Record<number, { code: string; title: string; detail: string }> 
   409: {
     code: 'CONFLICT',
     title: 'Conflito',
-    detail: 'A operação conflita com o estado atual dos dados. Atualize a página e tente novamente.',
+    detail:
+      'A operação conflita com o estado atual dos dados. Atualize a página e tente novamente.',
   },
   422: {
     code: 'UNPROCESSABLE',
@@ -49,7 +50,8 @@ const DEFAULTS: Record<number, { code: string; title: string; detail: string }> 
   503: {
     code: 'SERVICE_UNAVAILABLE',
     title: 'Serviço indisponível',
-    detail: 'Um serviço necessário está temporariamente indisponível. Tente novamente em instantes.',
+    detail:
+      'Um serviço necessário está temporariamente indisponível. Tente novamente em instantes.',
   },
 };
 
@@ -92,13 +94,22 @@ export class ProblemDetailsFilter implements ExceptionFilter {
     problem.instance = request.originalUrl;
     problem.requestId = requestId;
 
-    if (problem.status >= 500) {
+    if (problem.status >= 500 && exception instanceof AppException) {
+      // Falha prevista (ex.: serviço dependente fora do ar): quem lançou já registrou o detalhe.
+      this.logger.warn(
+        { requestId, path: request.originalUrl, code: problem.code },
+        `Erro ${problem.status} tratado`,
+      );
+    } else if (problem.status >= 500) {
       this.logger.error(
         { err: exception, requestId, path: request.originalUrl },
         `Erro ${problem.status} não tratado`,
       );
     } else if (problem.status === 401 || problem.status === 403) {
-      this.logger.warn({ requestId, path: request.originalUrl, code: problem.code }, 'Acesso negado');
+      this.logger.warn(
+        { requestId, path: request.originalUrl, code: problem.code },
+        'Acesso negado',
+      );
     }
 
     if (!response.headersSent) {
@@ -144,14 +155,24 @@ export class ProblemDetailsFilter implements ExceptionFilter {
 
     if (isPrismaKnownError(exception)) {
       if (exception.code === 'P2002') {
-        return this.build(409, 'DUPLICATE', DEFAULTS[409].title, 'Já existe um registro com esses dados.');
+        return this.build(
+          409,
+          'DUPLICATE',
+          DEFAULTS[409].title,
+          'Já existe um registro com esses dados.',
+        );
       }
       if (exception.code === 'P2025') {
         return this.build(404, DEFAULTS[404].code, DEFAULTS[404].title, DEFAULTS[404].detail);
       }
     }
 
-    return this.build(HttpStatus.INTERNAL_SERVER_ERROR, INTERNAL.code, INTERNAL.title, INTERNAL.detail);
+    return this.build(
+      HttpStatus.INTERNAL_SERVER_ERROR,
+      INTERNAL.code,
+      INTERNAL.title,
+      INTERNAL.detail,
+    );
   }
 
   private build(

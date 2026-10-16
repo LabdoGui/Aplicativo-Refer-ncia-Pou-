@@ -8,11 +8,7 @@ import { HEADERS } from '@pulso/contracts';
  * Logs estruturados em JSON com `requestId` e nome do serviço.
  * Cabeçalhos sensíveis (Authorization, Cookie, token interno) nunca são registrados.
  */
-export function buildLoggerParams(
-  serviceName: string,
-  level: string,
-  pretty: boolean,
-): Params {
+export function buildLoggerParams(serviceName: string, level: string, pretty: boolean): Params {
   return {
     // Sintaxe de rotas do Express 5 / path-to-regexp v8.
     forRoutes: [{ path: '{*path}', method: RequestMethod.ALL }],

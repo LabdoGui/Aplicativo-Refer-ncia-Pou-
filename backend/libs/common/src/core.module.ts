@@ -50,7 +50,9 @@ export class CoreModule {
     return {
       module: CoreModule,
       imports: [
-        LoggerModule.forRoot(buildLoggerParams(options.serviceName, config.LOG_LEVEL, config.LOG_PRETTY)),
+        LoggerModule.forRoot(
+          buildLoggerParams(options.serviceName, config.LOG_LEVEL, config.LOG_PRETTY),
+        ),
       ],
       providers,
       exports: [APP_CONFIG, SERVICE_NAME, TOKEN_VERIFIER, InternalHttpClient],

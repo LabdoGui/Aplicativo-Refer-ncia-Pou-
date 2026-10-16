@@ -12,7 +12,12 @@ import { randomUUID } from 'node:crypto';
 import * as amqp from 'amqp-connection-manager';
 import type { ChannelWrapper } from 'amqp-connection-manager';
 import type { ConfirmChannel } from 'amqplib';
-import { EVENT_EXCHANGE, type EventEnvelope, type EventPayloads, type EventType } from '@pulso/contracts';
+import {
+  EVENT_EXCHANGE,
+  type EventEnvelope,
+  type EventPayloads,
+  type EventType,
+} from '@pulso/contracts';
 import { APP_CONFIG, SERVICE_NAME } from '../tokens';
 import type { HealthIndicator } from '../health/health';
 

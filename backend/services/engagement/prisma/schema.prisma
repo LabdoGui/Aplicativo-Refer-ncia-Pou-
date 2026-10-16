@@ -1,0 +1,22 @@
+// Schema "engagement" — gamificação, ranking e horas complementares.
+// Os modelos de domínio entram na Fase 2 (docs/16-plano-de-implementacao.md, item 5).
+// Tabelas previstas:
+//   - points_entries: lançamentos de pontos (único por evento + motivo)
+//   - achievements: conquistas disponíveis
+//   - donor_achievements: conquistas desbloqueadas por doador
+//   - donor_engagement: totais, nível, opt-in de ranking, apelido, instituição
+//   - partner_institutions: instituições parceiras (fictícias)
+//   - complementary_hours: horas complementares (PENDING/APPROVED/REJECTED)
+//   - engagement_settings: parâmetros da gamificação (ex.: pointsBasis)
+//   - outbox_events: outbox transacional de eventos
+//   - processed_events: idempotência dos consumidores
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}

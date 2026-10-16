@@ -1,5 +1,12 @@
 import { z } from 'zod';
 
+/**
+ * Reexporta o Zod usado pelos schemas de ambiente, para que cada processo
+ * estenda `baseEnvSchema`/`serviceEnvSchema` com a mesma instância e sem
+ * declarar o Zod como dependência própria.
+ */
+export { z };
+
 /** Variáveis de ambiente que todo processo do back-end precisa. */
 export const baseEnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
