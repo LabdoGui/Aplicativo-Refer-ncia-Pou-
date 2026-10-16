@@ -1,0 +1,35 @@
+{
+  "name": "pulso",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Pulso — plataforma de apoio à doação de sangue (projeto acadêmico, ODS 3)",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
+  "workspaces": [
+    "backend/libs/contracts",
+    "backend/libs/common",
+    "backend/gateway",
+    "backend/services/*",
+    "frontend"
+  ],
+  "scripts": {
+    "build:libs": "npm run build -w @pulso/contracts && npm run build -w @pulso/common",
+    "build": "npm run build:libs && npm run build --workspaces --if-present",
+    "typecheck": "npm run build:libs && npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "prisma:generate": "npm run prisma:generate --workspaces --if-present",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "infra:up": "docker compose up -d postgres rabbitmq",
+    "infra:down": "docker compose down",
+    "smoke": "node scripts/smoke.mjs"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^11.0.24",
+    "@types/node": "^22.15.0",
+    "prettier": "^3.6.2",
+    "typescript": "~5.9.3"
+  }
+}

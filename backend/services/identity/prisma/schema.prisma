@@ -1,0 +1,12 @@
+// Schema "identity" — contas, credenciais, perfis e consentimentos.
+// Os modelos de domínio entram na Fase 2 (docs/16-plano-de-implementacao.md, item 5).
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
