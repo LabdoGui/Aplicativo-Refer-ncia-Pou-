@@ -721,7 +721,8 @@ export function buildSeedDataset(today: string = todayLocal()): SeedDataset {
   for (const target of stockTargets) {
     const daily: Array<{ day: DateTime; inQty: number; outQty: number }> = [];
     const base = Math.max(2, Math.round(target.ideal * 0.05));
-    for (let offset = 89; offset >= 0; offset--) {
+    // Até ontem: movimentações de hoje poderiam ficar no futuro (o seed roda a qualquer hora).
+    for (let offset = 90; offset >= 1; offset--) {
       const day = todayDate.minus({ days: offset });
       const recent = offset < 14;
       const inQty = random.chance(0.75) ? random.int(1, base) : 0;

@@ -9,14 +9,12 @@ import {
   FileChartColumn,
   House,
   LayoutDashboard,
-  LogIn,
   Medal,
   Megaphone,
   ScrollText,
   Settings,
   Stethoscope,
   Trophy,
-  UserPlus,
   UserRound,
   Users,
 } from 'lucide-react';
@@ -27,11 +25,6 @@ import type { NavItem } from '@/components/navigation/types';
  * `phase` indica em que fase do roadmap (docs/16, seção 8) cada tela será entregue;
  * até lá, a rota mostra o PhasePlaceholder ("Em construção").
  */
-
-export const PUBLIC_PLACEHOLDERS: readonly NavItem[] = [
-  { label: 'Entrar', to: '/entrar', icon: LogIn, phase: 2 },
-  { label: 'Criar conta', to: '/cadastro', icon: UserPlus, phase: 3 },
-];
 
 export const DONOR_NAV: readonly NavItem[] = [
   { label: 'Início', to: '/app', icon: House, phase: 3, pageTitle: 'Minha jornada', end: true },
@@ -56,7 +49,7 @@ export const DONOR_NOTIFICATIONS: NavItem = {
 };
 
 export const STAFF_NAV: readonly NavItem[] = [
-  { label: 'Atendimentos de hoje', to: '/equipe', icon: ClipboardList, phase: 6, end: true },
+  { label: 'Atendimentos do dia', to: '/equipe', icon: ClipboardList, phase: 6, end: true },
 ];
 
 export const ADMIN_NAV: readonly NavItem[] = [
@@ -70,7 +63,7 @@ export const ADMIN_NAV: readonly NavItem[] = [
     to: '/admin/estoque',
     icon: Droplets,
     phase: 11,
-    pageTitle: 'Pulso do Estoque',
+    pageTitle: 'Banco de Sangue',
   },
   { label: 'Campanhas', to: '/admin/campanhas', icon: Megaphone, phase: 5 },
   { label: 'Gamificação', to: '/admin/gamificacao', icon: Medal, phase: 8 },

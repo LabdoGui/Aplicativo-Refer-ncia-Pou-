@@ -1,51 +1,32 @@
+import type { ComponentType } from 'react';
 import type { RouteObject } from 'react-router-dom';
-import type { NavItem } from '@/components/navigation/types';
+import { RequireRole } from '@/features/auth/RequireRole';
 import { AdminLayout } from '@/layouts/AdminLayout';
 import { DonorLayout } from '@/layouts/DonorLayout';
 import { PublicContainer } from '@/layouts/public/PublicContainer';
 import { PublicLayout } from '@/layouts/PublicLayout';
 import { StaffLayout } from '@/layouts/StaffLayout';
-import { PhasePlaceholder } from '@/pages/PhasePlaceholder';
+import { LoginPage } from '@/pages/auth/LoginPage';
+import { RegisterPage } from '@/pages/auth/RegisterPage';
 import { LandingPage } from '@/pages/public/LandingPage';
 import { NotFoundPage } from '@/pages/public/NotFoundPage';
 import { PrivacyPage } from '@/pages/public/PrivacyPage';
 import { StatusPage } from '@/pages/public/StatusPage';
 import { RouteErrorPage } from '@/pages/RouteErrorPage';
-import {
-  ADMIN_NAV,
-  DONOR_NAV,
-  DONOR_NOTIFICATIONS,
-  PUBLIC_PLACEHOLDERS,
-  STAFF_NAV,
-} from './navigation';
 import { RootRoute } from './RootRoute';
 
-/** Converte itens de navegação de uma área em rotas filhas com o PhasePlaceholder. */
-function placeholderRoutes(items: readonly NavItem[], basePath: string): RouteObject[] {
-  return items.map((item) => {
-    const element = <PhasePlaceholder title={item.pageTitle ?? item.label} phase={item.phase} />;
-    return item.to === basePath
-      ? { index: true, element }
-      : { path: item.to.slice(basePath.length + 1), element };
-  });
+/** Carrega a página sob demanda (cada área vira um pedaço separado do bundle). */
+function page<M>(load: () => Promise<M>, pick: (module: M) => ComponentType): RouteObject['lazy'] {
+  return async () => ({ Component: pick(await load()) });
 }
 
-const publicPlaceholderRoutes: RouteObject[] = PUBLIC_PLACEHOLDERS.map((item) => ({
-  path: item.to.slice(1),
-  element: (
-    <PublicContainer>
-      <PhasePlaceholder
-        title={item.pageTitle ?? item.label}
-        phase={item.phase}
-        backTo={{ to: '/', label: 'Voltar para a página inicial' }}
-      />
-    </PublicContainer>
-  ),
-}));
-
+const notifications = page(
+  () => import('@/pages/shared/NotificationsPage'),
+  (m) => m.NotificationsPage,
+);
 const notFoundInArea: RouteObject = { path: '*', element: <NotFoundPage /> };
 
-/** Árvore de rotas (separada do router para permitir renderização em testes/SSR). */
+/** Árvore de rotas (separada do router para permitir renderização em testes). */
 export const routes: RouteObject[] = [
   {
     element: <RootRoute />,
@@ -57,7 +38,15 @@ export const routes: RouteObject[] = [
           { index: true, element: <LandingPage /> },
           { path: 'privacidade', element: <PrivacyPage /> },
           { path: 'status', element: <StatusPage /> },
-          ...publicPlaceholderRoutes,
+          { path: 'entrar', element: <LoginPage /> },
+          { path: 'cadastro', element: <RegisterPage /> },
+          {
+            path: 'verificar/:code?',
+            lazy: page(
+              () => import('@/pages/public/VerifyDocumentPage'),
+              (m) => m.VerifyDocumentPage,
+            ),
+          },
           {
             path: '*',
             element: (
@@ -68,25 +57,223 @@ export const routes: RouteObject[] = [
           },
         ],
       },
-      // Fase 2: proteger as áreas abaixo com guarda de rota por papel
-      // (ROLE_HOME e ROLE_PERMISSIONS de @pulso/contracts).
       {
         path: 'app',
-        element: <DonorLayout />,
+        element: (
+          <RequireRole roles={['DONOR']}>
+            <DonorLayout />
+          </RequireRole>
+        ),
         children: [
-          ...placeholderRoutes([...DONOR_NAV, DONOR_NOTIFICATIONS], '/app'),
+          {
+            index: true,
+            lazy: page(
+              () => import('@/pages/donor/DonorHomePage'),
+              (m) => m.DonorHomePage,
+            ),
+          },
+          {
+            path: 'pre-triagem',
+            lazy: page(
+              () => import('@/pages/donor/PreScreeningPage'),
+              (m) => m.PreScreeningPage,
+            ),
+          },
+          {
+            path: 'agendar',
+            lazy: page(
+              () => import('@/pages/donor/BookingPage'),
+              (m) => m.BookingPage,
+            ),
+          },
+          {
+            path: 'agendamentos/:id',
+            lazy: page(
+              () => import('@/pages/donor/AppointmentDetailPage'),
+              (m) => m.AppointmentDetailPage,
+            ),
+          },
+          {
+            path: 'doacoes',
+            lazy: page(
+              () => import('@/pages/donor/DonationsPage'),
+              (m) => m.DonationsPage,
+            ),
+          },
+          {
+            path: 'doacoes/:attendanceId',
+            lazy: page(
+              () => import('@/pages/donor/AttendanceDetailPage'),
+              (m) => m.AttendanceDetailPage,
+            ),
+          },
+          {
+            path: 'doacoes/:attendanceId/obrigado',
+            lazy: page(
+              () => import('@/pages/donor/ThankYouPage'),
+              (m) => m.ThankYouPage,
+            ),
+          },
+          {
+            path: 'conquistas',
+            lazy: page(
+              () => import('@/pages/donor/AchievementsPage'),
+              (m) => m.AchievementsPage,
+            ),
+          },
+          {
+            path: 'horas',
+            lazy: page(
+              () => import('@/pages/donor/HoursPage'),
+              (m) => m.HoursPage,
+            ),
+          },
+          {
+            path: 'documentos',
+            lazy: page(
+              () => import('@/pages/donor/DocumentsPage'),
+              (m) => m.DocumentsPage,
+            ),
+          },
+          { path: 'notificacoes', lazy: notifications },
+          {
+            path: 'perfil',
+            lazy: page(
+              () => import('@/pages/donor/ProfilePage'),
+              (m) => m.ProfilePage,
+            ),
+          },
+          {
+            path: 'privacidade',
+            lazy: page(
+              () => import('@/pages/donor/PrivacyCenterPage'),
+              (m) => m.PrivacyCenterPage,
+            ),
+          },
           notFoundInArea,
         ],
       },
       {
         path: 'equipe',
-        element: <StaffLayout />,
-        children: [...placeholderRoutes(STAFF_NAV, '/equipe'), notFoundInArea],
+        element: (
+          <RequireRole roles={['COLLABORATOR', 'NURSE']}>
+            <StaffLayout />
+          </RequireRole>
+        ),
+        children: [
+          {
+            index: true,
+            lazy: page(
+              () => import('@/pages/staff/AgendaPage'),
+              (m) => m.AgendaPage,
+            ),
+          },
+          {
+            path: 'atendimentos/:appointmentId',
+            lazy: page(
+              () => import('@/pages/staff/AttendancePage'),
+              (m) => m.AttendancePage,
+            ),
+          },
+          { path: 'notificacoes', lazy: notifications },
+          notFoundInArea,
+        ],
       },
       {
         path: 'admin',
-        element: <AdminLayout />,
-        children: [...placeholderRoutes(ADMIN_NAV, '/admin'), notFoundInArea],
+        element: (
+          <RequireRole roles={['ADMIN']}>
+            <AdminLayout />
+          </RequireRole>
+        ),
+        children: [
+          {
+            index: true,
+            lazy: page(
+              () => import('@/pages/admin/DashboardPage'),
+              (m) => m.DashboardPage,
+            ),
+          },
+          {
+            path: 'agendamentos',
+            lazy: page(
+              () => import('@/pages/admin/AppointmentsPage'),
+              (m) => m.AppointmentsPage,
+            ),
+          },
+          {
+            path: 'doadores',
+            lazy: page(
+              () => import('@/pages/admin/DonorsPage'),
+              (m) => m.DonorsPage,
+            ),
+          },
+          {
+            path: 'profissionais',
+            lazy: page(
+              () => import('@/pages/admin/StaffPage'),
+              (m) => m.StaffPage,
+            ),
+          },
+          {
+            path: 'unidades',
+            lazy: page(
+              () => import('@/pages/admin/UnitsPage'),
+              (m) => m.UnitsPage,
+            ),
+          },
+          {
+            path: 'unidades/:unitId',
+            lazy: page(
+              () => import('@/pages/admin/UnitDetailPage'),
+              (m) => m.UnitDetailPage,
+            ),
+          },
+          {
+            path: 'estoque',
+            lazy: page(
+              () => import('@/pages/admin/StockPage'),
+              (m) => m.StockPage,
+            ),
+          },
+          {
+            path: 'campanhas',
+            lazy: page(
+              () => import('@/pages/admin/CampaignsPage'),
+              (m) => m.CampaignsPage,
+            ),
+          },
+          {
+            path: 'gamificacao',
+            lazy: page(
+              () => import('@/pages/admin/GamificationPage'),
+              (m) => m.GamificationPage,
+            ),
+          },
+          {
+            path: 'relatorios',
+            lazy: page(
+              () => import('@/pages/admin/ReportsPage'),
+              (m) => m.ReportsPage,
+            ),
+          },
+          {
+            path: 'configuracoes',
+            lazy: page(
+              () => import('@/pages/admin/SettingsPage'),
+              (m) => m.SettingsPage,
+            ),
+          },
+          {
+            path: 'auditoria',
+            lazy: page(
+              () => import('@/pages/admin/AuditPage'),
+              (m) => m.AuditPage,
+            ),
+          },
+          { path: 'notificacoes', lazy: notifications },
+          notFoundInArea,
+        ],
       },
     ],
   },

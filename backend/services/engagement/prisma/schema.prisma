@@ -90,16 +90,19 @@ model PointsEntry {
 }
 
 model DonorEngagement {
-  donorId          String    @id @db.Uuid
-  totalPoints      Int       @default(0)
-  attendanceCount  Int       @default(0)
-  donationCount    Int       @default(0)
-  lastAttendanceAt DateTime? @db.Timestamptz(3)
-  rankingOptIn     Boolean   @default(false)
-  nickname         String?   @unique
-  institutionId    String?   @db.Uuid
-  createdAt        DateTime  @default(now()) @db.Timestamptz(3)
-  updatedAt        DateTime  @updatedAt @db.Timestamptz(3)
+  donorId               String    @id @db.Uuid
+  totalPoints           Int       @default(0)
+  attendanceCount       Int       @default(0)
+  donationCount         Int       @default(0)
+  /// Doações concluídas dentro de campanhas (conquista CAMPAIGN_DONATION).
+  campaignDonationCount Int       @default(0)
+  lastAttendanceAt      DateTime? @db.Timestamptz(3)
+  rankingOptIn          Boolean   @default(false)
+  /// Apelido do ranking (RN20). Único também sem diferenciar maiúsculas (índice em SQL).
+  nickname              String?   @unique
+  institutionId         String?   @db.Uuid
+  createdAt             DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt             DateTime  @updatedAt @db.Timestamptz(3)
 
   institution PartnerInstitution? @relation(fields: [institutionId], references: [id], onDelete: SetNull)
 

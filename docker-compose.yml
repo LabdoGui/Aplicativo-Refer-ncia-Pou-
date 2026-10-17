@@ -154,6 +154,8 @@ services:
       <<: *service-env
       PORT: 3002
       DATABASE_URL: postgresql://scheduling_app:${SCHEDULING_DB_PASSWORD:-scheduling_dev_password}@postgres:5432/${POSTGRES_DB:-pulso}?schema=scheduling
+      # Demonstração: check-in de agendamentos futuros, para fazer a jornada completa numa sessão.
+      DEMO_EARLY_CHECK_IN: ${DEMO_EARLY_CHECK_IN:-true}
     ports:
       - '127.0.0.1:3002:3002'
 

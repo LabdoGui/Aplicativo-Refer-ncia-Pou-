@@ -1,6 +1,7 @@
 import { Link, Outlet } from 'react-router-dom';
 import { DONOR_NAV, DONOR_NOTIFICATIONS } from '@/app/navigation';
 import { Logo } from '@/components/brand/Logo';
+import { AccountMenu } from '@/components/navigation/AccountMenu';
 import { BottomNav } from '@/components/navigation/BottomNav';
 import { NotificationBell } from '@/components/navigation/NotificationBell';
 import { SideNavList } from '@/components/navigation/SideNavList';
@@ -9,6 +10,12 @@ import { AppFooter } from './shared/AppFooter';
 import { MainContent } from './shared/MainContent';
 
 const NAV_LABEL = 'Área do doador';
+const DONOR_ACCOUNT_LINKS = [
+  { to: '/app/perfil', label: 'Meu perfil' },
+  { to: '/app/documentos', label: 'Meus documentos' },
+  { to: '/app/horas', label: 'Horas complementares' },
+  { to: '/app/privacidade', label: 'Privacidade e dados' },
+];
 
 /**
  * Área do doador (/app): mobile-first, com navegação inferior no celular
@@ -41,9 +48,9 @@ export function DonorLayout() {
             <Logo size="sm" />
           </Link>
           <p className="hidden text-sm font-medium text-ink-muted lg:block">{NAV_LABEL}</p>
-          {/* Slot de ações do topo: notificações (Fase 12) e, depois, menu da conta. */}
           <div className="ml-auto flex items-center gap-1">
             <NotificationBell to={DONOR_NOTIFICATIONS.to} />
+            <AccountMenu links={DONOR_ACCOUNT_LINKS} />
           </div>
         </header>
 

@@ -136,6 +136,8 @@ export interface AgendaResponse {
   date: string;
   items: AgendaItem[];
   counts: Record<AppointmentStatus, number>;
+  /** Modo de demonstração: check-in de agendamentos de dias futuros permitido. */
+  earlyCheckInAllowed: boolean;
 }
 
 /** Agendamento visto pela equipe (detalhe do atendimento), com o resumo do doador. */

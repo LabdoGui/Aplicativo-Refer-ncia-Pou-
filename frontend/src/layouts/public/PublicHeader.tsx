@@ -2,13 +2,16 @@ import { useEffect, useRef, useState } from 'react';
 import { Menu, X } from 'lucide-react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { Logo } from '@/components/brand/Logo';
+import { ROLE_HOME } from '@pulso/contracts';
 import { ButtonLink } from '@/components/ui';
+import { useSession } from '@/features/auth/use-auth';
 import { PublicNavLinks } from './PublicNavLinks';
 
 const MOBILE_MENU_ID = 'menu-publico';
 
 export function PublicHeader() {
   const location = useLocation();
+  const { user } = useSession();
   const toggleRef = useRef<HTMLButtonElement>(null);
   /*
    * O menu fica aberto só na navegação em que foi aberto (cada uma tem uma `key` própria).
@@ -48,14 +51,22 @@ export function PublicHeader() {
         </nav>
 
         <div className="ml-auto flex items-center gap-2">
-          <span className="hidden sm:block">
-            <ButtonLink to="/entrar" variant="ghost">
-              Entrar
+          {user ? (
+            <ButtonLink to={ROLE_HOME[user.role]} variant="secondary">
+              Minha área
             </ButtonLink>
-          </span>
-          <ButtonLink to="/cadastro" variant="primary">
-            Quero doar
-          </ButtonLink>
+          ) : (
+            <>
+              <span className="hidden sm:block">
+                <ButtonLink to="/entrar" variant="ghost">
+                  Entrar
+                </ButtonLink>
+              </span>
+              <ButtonLink to="/cadastro" variant="primary">
+                Quero doar
+              </ButtonLink>
+            </>
+          )}
           <button
             ref={toggleRef}
             type="button"
@@ -81,12 +92,14 @@ export function PublicHeader() {
         className="border-t border-line bg-surface px-4 py-3 md:hidden"
       >
         <PublicNavLinks vertical />
-        <NavLink
-          to="/entrar"
-          className="mt-1 flex min-h-11 items-center rounded-control px-3 font-medium text-petroleo-800 hover:bg-surface-muted sm:hidden"
-        >
-          Entrar
-        </NavLink>
+        {!user && (
+          <NavLink
+            to="/entrar"
+            className="mt-1 flex min-h-11 items-center rounded-control px-3 font-medium text-petroleo-800 hover:bg-surface-muted sm:hidden"
+          >
+            Entrar
+          </NavLink>
+        )}
       </nav>
     </header>
   );

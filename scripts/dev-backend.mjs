@@ -84,6 +84,9 @@ const serviceSpecificEnv = {
     JWT_KEYS_DIR: '.keys',
     COOKIE_SECURE: env('COOKIE_SECURE', 'false'),
   },
+  scheduling: {
+    DEMO_EARLY_CHECK_IN: env('DEMO_EARLY_CHECK_IN', 'true'),
+  },
   clinical: {
     FIELD_ENCRYPTION_KEY: env(
       'CLINICAL_FIELD_ENCRYPTION_KEY',

@@ -30,6 +30,13 @@ describe('resolveRoute (registro oficial de serviços)', () => {
     }
   });
 
+  it.each(['/api/v1/dashboard/statistics', '/api/v1/dashboard/public-stats', '/api/v1/audit-logs'])(
+    '%s fica no gateway (composição, não é rota de serviço)',
+    (path) => {
+      expect(resolveRoute(path)).toEqual({ kind: 'local' });
+    },
+  );
+
   it('não confunde prefixo com início de palavra', () => {
     expect(resolveRoute('/api/v1/usersx')).toEqual({ kind: 'local' });
     expect(resolveRoute('/api/v1/authentication')).toEqual({ kind: 'local' });

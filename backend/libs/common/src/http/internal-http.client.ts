@@ -38,7 +38,11 @@ export class InternalHttpClient {
         signal: AbortSignal.timeout(options.timeoutMs ?? 3000),
       });
     } catch (error) {
-      this.logger.error({ err: error, url: url.toString() }, 'Falha na chamada interna');
+      // Serviço fora do ar ou lento é uma situação prevista (degradação parcial): aviso sem stack.
+      this.logger.warn(
+        { url: url.toString(), reason: error instanceof Error ? error.message : String(error) },
+        'Falha na chamada interna',
+      );
       throw new AppException(
         503,
         'UPSTREAM_UNAVAILABLE',
@@ -50,7 +54,7 @@ export class InternalHttpClient {
       throw new AppException(404, 'NOT_FOUND', 'O recurso solicitado não foi encontrado.');
     }
     if (!response.ok) {
-      this.logger.error(
+      this.logger.warn(
         { url: url.toString(), status: response.status },
         'Chamada interna retornou erro',
       );

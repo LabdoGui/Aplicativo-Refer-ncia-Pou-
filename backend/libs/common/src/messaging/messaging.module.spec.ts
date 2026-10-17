@@ -29,4 +29,12 @@ describe('MessagingModule e AuditModule', () => {
     expect(moduleRef.get(EventConsumer)).toBeInstanceOf(EventConsumer);
     expect(moduleRef.get(AuditService)).toBeInstanceOf(AuditService);
   });
+
+  it('sem outbox, registra só a conexão e o consumidor', async () => {
+    const moduleRef = await Test.createTestingModule({
+      imports: [FakeCoreModule, MessagingModule.forRoot({ outbox: false })],
+    }).compile();
+    expect(moduleRef.get(EventConsumer)).toBeInstanceOf(EventConsumer);
+    expect(() => moduleRef.get(OutboxRelay)).toThrow();
+  });
 });

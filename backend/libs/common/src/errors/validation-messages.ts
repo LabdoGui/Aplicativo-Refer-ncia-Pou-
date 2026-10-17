@@ -47,6 +47,7 @@ const TRANSLATIONS: Record<string, Translator> = {
   arrayNotEmpty: fixed('Informe ao menos um item.'),
   arrayMinSize: (message) => `Informe ao menos ${numberIn(message)} itens.`,
   arrayMaxSize: (message) => `Informe no máximo ${numberIn(message)} itens.`,
+  arrayUnique: fixed('Não repita itens na lista.'),
 };
 
 const GENERIC = 'Valor inválido.';

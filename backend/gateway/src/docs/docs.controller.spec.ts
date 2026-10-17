@@ -24,6 +24,15 @@ async function startDocsApp(docsEnabled: boolean): Promise<{ app: INestApplicati
   return { app, url: await app.getUrl() };
 }
 
+/**
+ * Encerra o servidor sem esperar as conexões keep-alive abertas pelo fetch:
+ * sem isso, o app.close() pode passar do tempo limite do afterAll.
+ */
+async function stopApp(app: INestApplication): Promise<void> {
+  (app.getHttpServer() as import('node:http').Server).closeAllConnections();
+  await app.close();
+}
+
 const DOCS_PATHS = [
   '/api/docs',
   '/api/docs-json',
@@ -37,7 +46,7 @@ describe('DocsController', () => {
     let url: string;
 
     beforeAll(async () => ({ app, url } = await startDocsApp(true)));
-    afterAll(() => app.close());
+    afterAll(() => stopApp(app));
 
     it.each(DOCS_PATHS)('%s responde 200', async (path) => {
       expect((await fetch(`${url}${path}`)).status).toBe(200);
@@ -49,7 +58,7 @@ describe('DocsController', () => {
     let url: string;
 
     beforeAll(async () => ({ app, url } = await startDocsApp(false)));
-    afterAll(() => app.close());
+    afterAll(() => stopApp(app));
 
     it.each(DOCS_PATHS)('%s responde 404 (Problem Details)', async (path) => {
       const response = await fetch(`${url}${path}`);

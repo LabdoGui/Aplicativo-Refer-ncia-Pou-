@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { CoreModule, HealthModule } from '@pulso/common';
+import { AnalyticsModule } from './analytics/analytics.module';
 import { envSchema } from './config';
 import { DocsModule } from './docs/docs.module';
 import { EdgeModule } from './edge/edge.module';
@@ -15,6 +16,7 @@ import { ServicesHealthModule } from './health/services-health.module';
     EdgeModule,
     ServicesHealthModule,
     DocsModule,
+    AnalyticsModule,
   ],
 })
 export class AppModule {}

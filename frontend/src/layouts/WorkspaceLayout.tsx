@@ -5,6 +5,8 @@ import { Logo } from '@/components/brand/Logo';
 import { NavDrawer } from '@/components/navigation/NavDrawer';
 import { SideNavList } from '@/components/navigation/SideNavList';
 import type { NavItem } from '@/components/navigation/types';
+import { AccountMenu } from '@/components/navigation/AccountMenu';
+import { NotificationBell } from '@/components/navigation/NotificationBell';
 import { Badge, SkipLink } from '@/components/ui';
 import { AppFooter } from './shared/AppFooter';
 import { MainContent } from './shared/MainContent';
@@ -15,13 +17,20 @@ interface WorkspaceLayoutProps {
   areaLabel: string;
   homePath: string;
   items: readonly NavItem[];
+  /** Central de notificações da área (sino no topo). */
+  notificationsPath?: string;
 }
 
 /**
  * Casca desktop-first das áreas profissionais (equipe e administração):
  * barra lateral petróleo fixa em telas grandes e menu em gaveta (dialog) no celular/tablet.
  */
-export function WorkspaceLayout({ areaLabel, homePath, items }: WorkspaceLayoutProps) {
+export function WorkspaceLayout({
+  areaLabel,
+  homePath,
+  items,
+  notificationsPath,
+}: WorkspaceLayoutProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const drawerId = useId();
   const closeDrawer = () => setDrawerOpen(false);
@@ -59,8 +68,12 @@ export function WorkspaceLayout({ areaLabel, homePath, items }: WorkspaceLayoutP
             <Logo size="sm" />
           </Link>
           <p className="hidden text-sm font-semibold text-petroleo-800 lg:block">{areaLabel}</p>
-          <div className="ml-auto">
-            <Badge tone="neutral">Dados fictícios</Badge>
+          <div className="ml-auto flex items-center gap-2">
+            <Badge tone="neutral" className="hidden sm:inline-flex">
+              Dados fictícios
+            </Badge>
+            {notificationsPath && <NotificationBell to={notificationsPath} />}
+            <AccountMenu />
           </div>
         </header>
 

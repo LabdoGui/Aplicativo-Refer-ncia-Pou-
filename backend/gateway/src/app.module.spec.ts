@@ -3,8 +3,22 @@ import type { AddressInfo } from 'node:net';
 import { Controller, Get, type INestApplication } from '@nestjs/common';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Test } from '@nestjs/testing';
-import { CurrentUser, Roles, TOKEN_VERIFIER, type TokenVerifier } from '@pulso/common';
-import { API_PREFIX, type AuthUser, type ProblemDetails } from '@pulso/contracts';
+import {
+  createValidationPipe,
+  CurrentUser,
+  noStoreByDefault,
+  Roles,
+  TOKEN_VERIFIER,
+  type TokenVerifier,
+} from '@pulso/common';
+import {
+  API_PREFIX,
+  type AuditLogsResponse,
+  type AuthUser,
+  type DashboardStatistics,
+  type ProblemDetails,
+  type PublicStats,
+} from '@pulso/contracts';
 import { errors } from 'jose';
 
 /**
@@ -27,14 +41,40 @@ const fakeVerifier: TokenVerifier = {
   },
 };
 
-/** Rota ADMIN do próprio gateway, como GET /dashboard/statistics da Fase 10. */
-@Controller(`${API_PREFIX}/dashboard`)
-class FakeDashboardController {
+const INTERNAL_TOKEN = 'token-interno-de-teste-123';
+
+/** Rota de teste do gateway protegida por papel (@Roles), além das rotas reais de composição. */
+@Controller(`${API_PREFIX}/teste-admin`)
+class FakeAdminController {
   @Roles('ADMIN')
-  @Get('statistics')
-  statistics(@CurrentUser() user?: AuthUser): { userId?: string } {
+  @Get()
+  whoAmI(@CurrentUser() user?: AuthUser): { userId?: string } {
     return { userId: user?.id };
   }
+}
+
+/** Resposta das rotas /internal do serviço falso (exigem o token interno). */
+function internalResponse(path: string): unknown {
+  if (path.startsWith(`/${API_PREFIX}/internal/stats`)) {
+    return { donorsTotal: 7, donationsCompleted: 5, activeUnits: 3, levels: [] };
+  }
+  if (path.startsWith(`/${API_PREFIX}/internal/audit-logs`)) {
+    return [
+      {
+        id: 'a1',
+        service: 'qualquer',
+        actorId: null,
+        actorRole: 'ADMIN',
+        action: 'unit.created',
+        entity: 'unit',
+        entityId: null,
+        metadata: null,
+        requestId: null,
+        createdAt: '2026-10-17T10:00:00.000Z',
+      },
+    ];
+  }
+  return undefined;
 }
 
 interface UpstreamEcho {
@@ -49,6 +89,13 @@ async function startFakeUpstream(): Promise<{ server: Server; url: string }> {
     response.setHeader('content-type', 'application/json');
     if (request.url === '/health') {
       response.end(JSON.stringify({ status: 'up', version: '0.1.0', checks: { database: 'up' } }));
+      return;
+    }
+    if (request.url?.startsWith(`/${API_PREFIX}/internal/`)) {
+      const body = internalResponse(request.url);
+      const authorized = request.headers['x-internal-token'] === INTERNAL_TOKEN;
+      response.statusCode = !authorized ? 401 : body === undefined ? 404 : 200;
+      response.end(JSON.stringify(authorized ? (body ?? {}) : {}));
       return;
     }
     if (request.url === '/docs-json') {
@@ -83,7 +130,7 @@ describe('gateway (AppModule): autenticação das rotas próprias × rotas encam
       NODE_ENV: 'test',
       PORT: '3999',
       LOG_LEVEL: 'fatal',
-      INTERNAL_API_TOKEN: 'token-interno-de-teste-123',
+      INTERNAL_API_TOKEN: INTERNAL_TOKEN,
       JWKS_URL: 'http://127.0.0.1:9/jwks.json',
       IDENTITY_URL: fake.url,
       SCHEDULING_URL: fake.url,
@@ -97,7 +144,7 @@ describe('gateway (AppModule): autenticação das rotas próprias × rotas encam
 
     const moduleRef = await Test.createTestingModule({
       imports: [AppModule],
-      controllers: [FakeDashboardController],
+      controllers: [FakeAdminController],
     })
       .overrideProvider(TOKEN_VERIFIER)
       .useValue(fakeVerifier)
@@ -106,6 +153,9 @@ describe('gateway (AppModule): autenticação das rotas próprias × rotas encam
       logger: false,
       bodyParser: false,
     });
+    // O mesmo que o bootstrapService aplica em produção (validação e Cache-Control padrão).
+    app.useGlobalPipes(createValidationPipe());
+    app.use(noStoreByDefault);
     await app.listen(0, '127.0.0.1');
     baseUrl = await app.getUrl();
   });
@@ -121,7 +171,7 @@ describe('gateway (AppModule): autenticação das rotas próprias × rotas encam
   const bearer = (token: string) => ({ authorization: `Bearer ${token}` });
 
   describe('rota do gateway com @Roles("ADMIN")', () => {
-    const path = `/${API_PREFIX}/dashboard/statistics`;
+    const path = `/${API_PREFIX}/teste-admin`;
 
     it('anônimo → 401 AUTH_REQUIRED', async () => {
       const response = await get(path);
@@ -156,6 +206,72 @@ describe('gateway (AppModule): autenticação das rotas próprias × rotas encam
 
       expect(response.status).toBe(503);
       expect(((await response.json()) as ProblemDetails).code).toBe('AUTH_UNAVAILABLE');
+    });
+  });
+
+  describe('composição: GET /api/v1/dashboard/statistics [analytics:read]', () => {
+    const path = `/${API_PREFIX}/dashboard/statistics?from=2026-09-17&to=2026-10-17`;
+
+    it('anônimo → 401; DONOR → 403 FORBIDDEN_PERMISSION', async () => {
+      expect((await get(path)).status).toBe(401);
+      const response = await get(path, bearer('token-doador'));
+      expect(response.status).toBe(403);
+      expect(((await response.json()) as ProblemDetails).code).toBe('FORBIDDEN_PERMISSION');
+    });
+
+    it('ADMIN → 200 com as estatísticas de cada serviço (token interno enviado)', async () => {
+      const response = await get(path, bearer('token-admin'));
+      const body = (await response.json()) as DashboardStatistics;
+
+      expect(response.status).toBe(200);
+      expect(response.headers.get('cache-control')).toBe('no-store');
+      expect(body.filters).toEqual({ from: '2026-09-17', to: '2026-10-17' });
+      expect(body.identity).toMatchObject({ donorsTotal: 7 });
+      expect(body.unavailable).toEqual([]);
+    });
+
+    it('período inválido → 400 com erros por campo', async () => {
+      const response = await get(
+        `/${API_PREFIX}/dashboard/statistics?from=17/10/2026&to=2026-10-17`,
+        bearer('token-admin'),
+      );
+      const body = (await response.json()) as ProblemDetails;
+
+      expect(response.status).toBe(400);
+      expect(body.errors?.map((error) => error.field)).toContain('from');
+    });
+  });
+
+  describe('composição: GET /api/v1/dashboard/public-stats [público]', () => {
+    it('responde sem token, com cache público de 60 s e sem quantidades de estoque', async () => {
+      const response = await get(`/${API_PREFIX}/dashboard/public-stats`);
+      const body = (await response.json()) as PublicStats;
+
+      expect(response.status).toBe(200);
+      expect(response.headers.get('cache-control')).toBe('public, max-age=60');
+      expect(body).toMatchObject({ donationsLast30Days: 5, activeUnits: 3, donorsRegistered: 7 });
+      expect(body.stock).toEqual([]);
+    });
+  });
+
+  describe('composição: GET /api/v1/audit-logs [audit:read]', () => {
+    it('DONOR → 403; ADMIN → trilha dos 5 serviços auditados', async () => {
+      expect((await get(`/${API_PREFIX}/audit-logs`, bearer('token-doador'))).status).toBe(403);
+
+      const response = await get(`/${API_PREFIX}/audit-logs?limit=3`, bearer('token-admin'));
+      const body = (await response.json()) as AuditLogsResponse;
+
+      expect(response.status).toBe(200);
+      expect(body.items).toHaveLength(3);
+      expect(body.unavailable).toEqual([]);
+    });
+
+    it('serviço fora da lista de auditados → 400', async () => {
+      const response = await get(
+        `/${API_PREFIX}/audit-logs?service=notification`,
+        bearer('token-admin'),
+      );
+      expect(response.status).toBe(400);
     });
   });
 
