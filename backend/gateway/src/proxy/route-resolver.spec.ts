@@ -14,7 +14,7 @@ describe('resolveRoute (registro oficial de serviços)', () => {
     ['/api/v1/units', 'scheduling', 'units'],
     ['/api/v1/blood-inventory/public', 'inventory', 'blood-inventory'],
     ['/api/v1/notifications/unread-count', 'notification', 'notifications'],
-    ['/api/v1/professional-screenings/fields', 'clinical', 'professional-screenings'],
+    ['/api/v1/attendances/fields', 'clinical', 'attendances'],
   ])('%s → %s', (path, service, prefix) => {
     expect(resolveRoute(path)).toEqual({ kind: 'proxy', service, prefix });
   });

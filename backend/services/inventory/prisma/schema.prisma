@@ -1,10 +1,5 @@
-// Schema "inventory" — banco de sangue: estoque central e movimentações.
-// Os modelos de domínio entram na Fase 2 (docs/16-plano-de-implementacao.md, item 5).
-// Tabelas previstas:
-//   - blood_stock: estoque por tipo sanguíneo (PK = tipo; quantidade, mínimo, ideal)
-//   - blood_stock_movements: movimentações IN/OUT (quantidade > 0, motivo, responsável, saldo após)
-//   - audit_logs: trilha de auditoria
-//   - outbox_events: outbox transacional de eventos
+// Schema "inventory" — estoque central por tipo sanguíneo (D6) e movimentações.
+// RN10: o estoque só muda por movimentações. CHECKs extras na migração inicial.
 
 generator client {
   provider = "prisma-client-js"
@@ -12,6 +7,98 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider          = "postgresql"
+  url               = env("DATABASE_URL")
+  // Banco de sombra do "prisma migrate dev" (database/init/01-init.sh). Não é usado em produção.
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+}
+
+enum BloodType {
+  A_POS
+  A_NEG
+  B_POS
+  B_NEG
+  AB_POS
+  AB_NEG
+  O_POS
+  O_NEG
+}
+
+enum MovementType {
+  IN
+  OUT
+}
+
+enum MovementReason {
+  PROCESSED_COLLECTION
+  TRANSFER_IN
+  ADJUSTMENT_IN
+  HOSPITAL_DISTRIBUTION
+  TRANSFER_OUT
+  EXPIRED_DISCARD
+  ADJUSTMENT_OUT
+}
+
+/// RN11: crítico abaixo de minimum; atenção entre minimum e ideal; adequado a partir de ideal.
+model BloodStock {
+  bloodType BloodType @id
+  quantity  Int
+  minimum   Int
+  ideal     Int
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+
+  movements StockMovement[]
+
+  @@map("blood_stock")
+}
+
+model StockMovement {
+  id              String         @id @default(uuid()) @db.Uuid
+  bloodType       BloodType
+  type            MovementType
+  quantity        Int
+  reason          MovementReason
+  notes           String?
+  occurredAt      DateTime       @db.Timestamptz(3)
+  responsibleId   String         @db.Uuid
+  responsibleName String
+  /// Saldo do tipo logo após a movimentação (histórico reconstruído a partir daqui).
+  balanceAfter    Int
+  createdAt       DateTime       @default(now()) @db.Timestamptz(3)
+
+  stock BloodStock @relation(fields: [bloodType], references: [bloodType])
+
+  @@index([bloodType, occurredAt])
+  @@index([occurredAt])
+  @@map("blood_stock_movements")
+}
+
+/// Trilha de auditoria (append-only), lida pelo gateway em /audit-logs.
+model AuditLog {
+  id        String   @id @db.Uuid
+  actorId   String?  @db.Uuid
+  actorRole String?
+  action    String
+  entity    String
+  entityId  String?
+  metadata  Json?
+  requestId String?
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+/// Outbox transacional: eventos gravados com o dado e publicados pelo OutboxRelay.
+model OutboxEvent {
+  id          String    @id @db.Uuid
+  type        String
+  payload     Json
+  occurredAt  DateTime  @db.Timestamptz(3)
+  publishedAt DateTime? @db.Timestamptz(3)
+  attempts    Int       @default(0)
+  lastError   String?
+
+  @@index([publishedAt, occurredAt])
+  @@map("outbox_events")
 }

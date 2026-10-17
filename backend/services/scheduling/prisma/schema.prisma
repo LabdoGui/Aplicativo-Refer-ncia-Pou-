@@ -1,15 +1,6 @@
-// Schema "scheduling" — unidades de saúde, grade de horários, vagas, agendamentos e campanhas.
-// Os modelos de domínio entram na Fase 2 (docs/16-plano-de-implementacao.md, item 5).
-// Tabelas previstas:
-//   - health_units: unidades de coleta
-//   - schedule_rules: grade semanal (dia da semana, início, fim, duração do slot, capacidade)
-//   - slots: vagas (única por unidade + início; bookedCount <= capacity)
-//   - schedule_blocks: bloqueios de agenda
-//   - campaigns: campanhas de doação
-//   - appointments: agendamentos (código único; 1 ativo por doador via índice parcial)
-//   - audit_logs: trilha de auditoria
-//   - outbox_events: outbox transacional de eventos
-//   - processed_events: idempotência dos consumidores
+// Schema "scheduling" — unidades, grade, vagas, bloqueios, campanhas e agendamentos.
+// SQL extra na migração inicial: CHECK de capacidade das vagas e índice único
+// parcial (1 agendamento ativo por doador). O Prisma não expressa esses dois.
 
 generator client {
   provider = "prisma-client-js"
@@ -17,6 +8,203 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider          = "postgresql"
+  url               = env("DATABASE_URL")
+  // Banco de sombra do "prisma migrate dev" (database/init/01-init.sh). Não é usado em produção.
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+}
+
+enum UnitStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum AppointmentStatus {
+  BOOKED
+  CONFIRMED
+  CHECKED_IN
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum CancelledBy {
+  DONOR
+  STAFF
+  SYSTEM
+}
+
+enum BloodType {
+  A_POS
+  A_NEG
+  B_POS
+  B_NEG
+  AB_POS
+  AB_NEG
+  O_POS
+  O_NEG
+}
+
+model HealthUnit {
+  id           String     @id @default(uuid()) @db.Uuid
+  name         String
+  address      String
+  district     String
+  city         String
+  state        String     @db.Char(2)
+  zipCode      String?
+  phone        String?
+  openingHours String?
+  status       UnitStatus @default(ACTIVE)
+  timezone     String     @default("America/Sao_Paulo")
+  createdAt    DateTime   @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime   @updatedAt @db.Timestamptz(3)
+
+  scheduleRules ScheduleRule[]
+  slots         Slot[]
+  blocks        ScheduleBlock[]
+  appointments  Appointment[]
+  campaigns     Campaign[]
+
+  @@map("health_units")
+}
+
+/// Grade semanal em hora local da unidade (weekday: 1 = segunda … 7 = domingo).
+model ScheduleRule {
+  id          String  @id @default(uuid()) @db.Uuid
+  unitId      String  @db.Uuid
+  weekday     Int
+  startTime   String
+  endTime     String
+  slotMinutes Int
+  capacity    Int
+  active      Boolean @default(true)
+
+  unit HealthUnit @relation(fields: [unitId], references: [id], onDelete: Cascade)
+
+  @@index([unitId, weekday])
+  @@map("schedule_rules")
+}
+
+/// Vaga materializada na primeira reserva (a disponibilidade vem da grade).
+model Slot {
+  id          String   @id @default(uuid()) @db.Uuid
+  unitId      String   @db.Uuid
+  startsAt    DateTime @db.Timestamptz(3)
+  endsAt      DateTime @db.Timestamptz(3)
+  capacity    Int
+  bookedCount Int      @default(0)
+
+  unit         HealthUnit    @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  appointments Appointment[]
+
+  @@unique([unitId, startsAt])
+  @@map("slots")
+}
+
+model ScheduleBlock {
+  id          String   @id @default(uuid()) @db.Uuid
+  unitId      String   @db.Uuid
+  startsAt    DateTime @db.Timestamptz(3)
+  endsAt      DateTime @db.Timestamptz(3)
+  reason      String
+  createdById String   @db.Uuid
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+
+  unit HealthUnit @relation(fields: [unitId], references: [id], onDelete: Cascade)
+
+  @@index([unitId, startsAt])
+  @@map("schedule_blocks")
+}
+
+model Campaign {
+  id          String      @id @default(uuid()) @db.Uuid
+  title       String
+  description String
+  bloodTypes  BloodType[]
+  /// null = todas as unidades
+  unitId      String?     @db.Uuid
+  startsAt    DateTime    @db.Date
+  endsAt      DateTime    @db.Date
+  active      Boolean     @default(true)
+  createdAt   DateTime    @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime    @updatedAt @db.Timestamptz(3)
+
+  unit         HealthUnit?   @relation(fields: [unitId], references: [id], onDelete: SetNull)
+  appointments Appointment[]
+
+  @@map("campaigns")
+}
+
+model Appointment {
+  id                String            @id @default(uuid()) @db.Uuid
+  code              String            @unique
+  donorId           String            @db.Uuid
+  unitId            String            @db.Uuid
+  slotId            String            @db.Uuid
+  startsAt          DateTime          @db.Timestamptz(3)
+  endsAt            DateTime          @db.Timestamptz(3)
+  status            AppointmentStatus @default(BOOKED)
+  campaignId        String?           @db.Uuid
+  rescheduledFromId String?           @db.Uuid
+  cancelledAt       DateTime?         @db.Timestamptz(3)
+  cancelledBy       CancelledBy?
+  cancelReason      String?
+  checkedInAt       DateTime?         @db.Timestamptz(3)
+  checkedInById     String?           @db.Uuid
+  completedAt       DateTime?         @db.Timestamptz(3)
+  noShowAt          DateTime?         @db.Timestamptz(3)
+  reminderSentAt    DateTime?         @db.Timestamptz(3)
+  createdAt         DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt         DateTime          @updatedAt @db.Timestamptz(3)
+
+  unit     HealthUnit @relation(fields: [unitId], references: [id])
+  slot     Slot       @relation(fields: [slotId], references: [id])
+  campaign Campaign?  @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+
+  @@index([donorId, startsAt])
+  @@index([unitId, startsAt])
+  @@index([status, startsAt])
+  @@map("appointments")
+}
+
+/// Trilha de auditoria (append-only), lida pelo gateway em /audit-logs.
+model AuditLog {
+  id        String   @id @db.Uuid
+  actorId   String?  @db.Uuid
+  actorRole String?
+  action    String
+  entity    String
+  entityId  String?
+  metadata  Json?
+  requestId String?
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+/// Outbox transacional: eventos gravados com o dado e publicados pelo OutboxRelay.
+model OutboxEvent {
+  id          String    @id @db.Uuid
+  type        String
+  payload     Json
+  occurredAt  DateTime  @db.Timestamptz(3)
+  publishedAt DateTime? @db.Timestamptz(3)
+  attempts    Int       @default(0)
+  lastError   String?
+
+  @@index([publishedAt, occurredAt])
+  @@map("outbox_events")
+}
+
+/// Eventos já tratados por cada handler (consumidor idempotente).
+model ProcessedEvent {
+  eventId     String   @db.Uuid
+  consumer    String
+  eventType   String
+  processedAt DateTime @default(now()) @db.Timestamptz(3)
+
+  @@id([eventId, consumer])
+  @@map("processed_events")
 }

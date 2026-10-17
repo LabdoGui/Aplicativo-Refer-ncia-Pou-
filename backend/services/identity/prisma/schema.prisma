@@ -1,5 +1,5 @@
 // Schema "identity" — contas, credenciais, perfis e consentimentos.
-// Os modelos de domínio entram na Fase 2 (docs/16-plano-de-implementacao.md, item 5).
+// Relações só dentro do schema; outros serviços referenciam o usuário pelo UUID.
 
 generator client {
   provider = "prisma-client-js"
@@ -7,6 +7,155 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider          = "postgresql"
+  url               = env("DATABASE_URL")
+  // Banco de sombra do "prisma migrate dev" (database/init/01-init.sh). Não é usado em produção.
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+}
+
+enum Role {
+  DONOR
+  COLLABORATOR
+  NURSE
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  DISABLED
+  ANONYMIZED
+}
+
+enum ConsentPurpose {
+  TERMS_PRIVACY
+  COMMUNICATIONS
+}
+
+enum BloodType {
+  A_POS
+  A_NEG
+  B_POS
+  B_NEG
+  AB_POS
+  AB_NEG
+  O_POS
+  O_NEG
+}
+
+model User {
+  id                  String     @id @default(uuid()) @db.Uuid
+  /// Sempre em minúsculas.
+  email               String     @unique
+  passwordHash        String
+  name                String
+  role                Role
+  status              UserStatus @default(ACTIVE)
+  failedLoginAttempts Int        @default(0)
+  lockedUntil         DateTime?  @db.Timestamptz(3)
+  lastLoginAt         DateTime?  @db.Timestamptz(3)
+  createdAt           DateTime   @default(now()) @db.Timestamptz(3)
+  updatedAt           DateTime   @updatedAt @db.Timestamptz(3)
+
+  donorProfile        DonorProfile?
+  professionalProfile ProfessionalProfile?
+  consents            Consent[]
+  refreshTokens       RefreshToken[]
+
+  @@index([role, status])
+  @@map("users")
+}
+
+model DonorProfile {
+  userId            String     @id @db.Uuid
+  donorCode         String     @unique
+  birthDate         DateTime   @db.Date
+  /// Telefone cifrado (AES-256-GCM, FieldEncryption).
+  phoneEncrypted    String?
+  declaredBloodType BloodType?
+  city              String?
+  createdAt         DateTime   @default(now()) @db.Timestamptz(3)
+  updatedAt         DateTime   @updatedAt @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("donor_profiles")
+}
+
+model ProfessionalProfile {
+  userId         String   @id @db.Uuid
+  unitIds        String[] @db.Uuid
+  registryNumber String?
+  createdAt      DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime @updatedAt @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("professional_profiles")
+}
+
+/// Estado atual de cada finalidade; as mudanças ficam na auditoria.
+model Consent {
+  id        String         @id @default(uuid()) @db.Uuid
+  userId    String         @db.Uuid
+  purpose   ConsentPurpose
+  granted   Boolean
+  version   String
+  grantedAt DateTime?      @db.Timestamptz(3)
+  revokedAt DateTime?      @db.Timestamptz(3)
+  updatedAt DateTime       @updatedAt @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, purpose])
+  @@map("consents")
+}
+
+/// Refresh tokens com rotação: reuso de um token já trocado revoga a família inteira.
+model RefreshToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  familyId  String    @db.Uuid
+  /// SHA-256 do token (o valor em si só existe no cookie do navegador).
+  tokenHash String    @unique
+  expiresAt DateTime  @db.Timestamptz(3)
+  rotatedAt DateTime? @db.Timestamptz(3)
+  revokedAt DateTime? @db.Timestamptz(3)
+  userAgent String?
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([familyId])
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+/// Trilha de auditoria (append-only), lida pelo gateway em /audit-logs.
+model AuditLog {
+  id        String   @id @db.Uuid
+  actorId   String?  @db.Uuid
+  actorRole String?
+  action    String
+  entity    String
+  entityId  String?
+  metadata  Json?
+  requestId String?
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+/// Outbox transacional: eventos gravados com o dado e publicados pelo OutboxRelay.
+model OutboxEvent {
+  id          String    @id @db.Uuid
+  type        String
+  payload     Json
+  occurredAt  DateTime  @db.Timestamptz(3)
+  publishedAt DateTime? @db.Timestamptz(3)
+  attempts    Int       @default(0)
+  lastError   String?
+
+  @@index([publishedAt, occurredAt])
+  @@map("outbox_events")
 }

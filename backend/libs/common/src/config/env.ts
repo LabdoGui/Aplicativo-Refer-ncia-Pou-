@@ -27,7 +27,19 @@ export const baseEnvSchema = z.object({
 export const serviceEnvSchema = baseEnvSchema.extend({
   DATABASE_URL: z.string().startsWith('postgresql://'),
   RABBITMQ_URL: z.string().startsWith('amqp'),
+  /** "true" grava os dados fictícios de demonstração na primeira subida (banco vazio). */
+  SEED_DEMO_DATA: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((value) => value === 'true'),
 });
+
+/** Chave AES-256 (32 bytes em base64) dos campos cifrados (FieldEncryption). */
+export const fieldEncryptionKeySchema = z
+  .string()
+  .refine((value) => Buffer.from(value, 'base64').length === 32, {
+    message: 'deve ter 32 bytes em base64 (gere com: openssl rand -base64 32)',
+  });
 
 export type BaseEnv = z.infer<typeof baseEnvSchema>;
 export type ServiceEnv = z.infer<typeof serviceEnvSchema>;

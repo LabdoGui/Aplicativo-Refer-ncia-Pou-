@@ -27,7 +27,7 @@ export const SERVICES: Record<ServiceName, ServiceDescriptor> = {
     name: 'identity',
     title: 'Identidade e acesso',
     defaultPort: 3001,
-    routePrefixes: ['auth', 'users', 'donors', 'consents', 'admin/users', '.well-known'],
+    routePrefixes: ['auth', 'users', 'consents', 'admin/users', '.well-known'],
   },
   scheduling: {
     name: 'scheduling',
@@ -41,10 +41,10 @@ export const SERVICES: Record<ServiceName, ServiceDescriptor> = {
     defaultPort: 3003,
     routePrefixes: [
       'screenings',
-      'professional-screenings',
+      'attendances',
       'donations',
       'documents',
-      'settings',
+      'clinical-settings',
       'screening-config',
       'admin/donations',
     ],
@@ -61,7 +61,6 @@ export const SERVICES: Record<ServiceName, ServiceDescriptor> = {
     defaultPort: 3005,
     routePrefixes: [
       'gamification',
-      'achievements',
       'complementary-hours',
       'institutions',
       'admin/complementary-hours',

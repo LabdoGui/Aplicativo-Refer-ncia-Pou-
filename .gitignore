@@ -12,3 +12,4 @@ data/
 frontend/dist/
 test-results/
 playwright-report/
+backend/services/identity/.keys/

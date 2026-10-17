@@ -1,7 +1,18 @@
 import { BadRequestException, ValidationError, ValidationPipe } from '@nestjs/common';
 import { translateConstraint } from './validation-messages';
 
-function flatten(
+/** Erros por campo, sem repetir a mesma mensagem no mesmo campo. */
+function flatten(errors: ValidationError[]): Array<{ field: string; message: string }> {
+  const seen = new Set<string>();
+  return collect(errors).filter(({ field, message }) => {
+    const key = `${field}\u0000${message}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function collect(
   errors: ValidationError[],
   parent = '',
 ): Array<{ field: string; message: string }> {
@@ -11,7 +22,7 @@ function flatten(
       field,
       message: translateConstraint(error.property, constraint, message),
     }));
-    return [...own, ...flatten(error.children ?? [], field)];
+    return [...own, ...collect(error.children ?? [], field)];
   });
 }
 

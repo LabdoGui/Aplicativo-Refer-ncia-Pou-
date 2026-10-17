@@ -65,6 +65,33 @@ const sharedEnv = {
   JWKS_URL: `http://localhost:${SERVICES.identity.defaultPort}/${API_PREFIX}/.well-known/jwks.json`,
 };
 
+/** Endereços das rotas /internal entre serviços (IDENTITY_URL, SCHEDULING_URL...). */
+const serviceUrls = Object.fromEntries(
+  SERVICE_NAMES.map((name) => [
+    `${name.toUpperCase()}_URL`,
+    `http://localhost:${SERVICES[name].defaultPort}`,
+  ]),
+);
+
+/** Variáveis próprias de alguns serviços (mesmos padrões do docker-compose.yml). */
+const serviceSpecificEnv = {
+  identity: {
+    FIELD_ENCRYPTION_KEY: env(
+      'IDENTITY_FIELD_ENCRYPTION_KEY',
+      'cHVsc28tZGV2LWlkZW50aXR5LWtleS0zMmJ5dGVzISE=',
+    ),
+    // Chaves do JWT em backend/services/identity/.keys (fora do git).
+    JWT_KEYS_DIR: '.keys',
+    COOKIE_SECURE: env('COOKIE_SECURE', 'false'),
+  },
+  clinical: {
+    FIELD_ENCRYPTION_KEY: env(
+      'CLINICAL_FIELD_ENCRYPTION_KEY',
+      'cHVsc28tZGV2LWNsaW5pY2FsLWtleS0zMmJ5dGVzISE=',
+    ),
+  },
+};
+
 function serviceProcess(name) {
   const password = env(`${name.toUpperCase()}_DB_PASSWORD`, `${name}_dev_password`);
   const postgresUrl = (database) =>
@@ -78,6 +105,9 @@ function serviceProcess(name) {
       DATABASE_URL: postgresUrl(infra.database),
       SHADOW_DATABASE_URL: postgresUrl(infra.shadowDatabase),
       RABBITMQ_URL: `amqp://${infra.rabbitUser}:${infra.rabbitPassword}@localhost:${infra.rabbitPort}`,
+      SEED_DEMO_DATA: env('SEED_DEMO_DATA', 'true'),
+      ...serviceUrls,
+      ...serviceSpecificEnv[name],
     },
   };
 }

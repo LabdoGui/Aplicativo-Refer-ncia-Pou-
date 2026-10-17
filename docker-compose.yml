@@ -49,6 +49,14 @@ x-service: &service
 x-service-env: &service-env
   <<: *backend-env
   RABBITMQ_URL: amqp://${RABBITMQ_USER:-pulso}:${RABBITMQ_PASSWORD:-pulso_dev}@rabbitmq:5672
+  # Migrações aplicadas no boot de cada serviço e dados fictícios de demonstração
+  # gravados quando o banco está vazio (ambiente acadêmico).
+  RUN_MIGRATIONS: ${RUN_MIGRATIONS:-true}
+  SEED_DEMO_DATA: ${SEED_DEMO_DATA:-true}
+  # Endereços internos para as chamadas /internal entre serviços.
+  IDENTITY_URL: http://identity:3001
+  SCHEDULING_URL: http://scheduling:3002
+  CLINICAL_URL: http://clinical:3003
 
 x-service-build: &service-build
   context: .
@@ -124,6 +132,12 @@ services:
       <<: *service-env
       PORT: 3001
       DATABASE_URL: postgresql://identity_app:${IDENTITY_DB_PASSWORD:-identity_dev_password}@postgres:5432/${POSTGRES_DB:-pulso}?schema=identity
+      FIELD_ENCRYPTION_KEY: ${IDENTITY_FIELD_ENCRYPTION_KEY:-cHVsc28tZGV2LWlkZW50aXR5LWtleS0zMmJ5dGVzISE=}
+      JWT_KEYS_DIR: /var/lib/pulso/identity-keys
+      # Em produção (HTTPS) use true. Com http na rede local, o navegador recusaria o cookie Secure.
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+    volumes:
+      - identity-keys:/var/lib/pulso/identity-keys
     ports:
       - '127.0.0.1:3001:3001'
 
@@ -156,6 +170,7 @@ services:
       <<: *service-env
       PORT: 3003
       DATABASE_URL: postgresql://clinical_app:${CLINICAL_DB_PASSWORD:-clinical_dev_password}@postgres:5432/${POSTGRES_DB:-pulso}?schema=clinical
+      FIELD_ENCRYPTION_KEY: ${CLINICAL_FIELD_ENCRYPTION_KEY:-cHVsc28tZGV2LWNsaW5pY2FsLWtleS0zMmJ5dGVzISE=}
     ports:
       - '127.0.0.1:3003:3003'
 
@@ -275,3 +290,5 @@ services:
 volumes:
   pgdata:
   rabbitmq-data:
+  # Par de chaves RSA do JWT: recriar o contêiner não derruba as sessões.
+  identity-keys:

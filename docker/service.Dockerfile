@@ -68,8 +68,8 @@ RUN --mount=type=bind,from=backend-src,target=/src \
      done
 
 # Dependências de produção do gateway e dos serviços (as bibliotecas @pulso entram
-# como links do workspace). A CLI do Prisma vem junto (dependência opcional do
-# @prisma/client); os engines já baixados no estágio deps permitem rodar
+# como links do workspace). A CLI do Prisma é dependência de produção dos serviços
+# (migrações no boot); os engines já baixados no estágio deps permitem rodar
 # "prisma migrate deploy" sem rede.
 FROM manifests AS prod-deps
 RUN --mount=type=cache,target=/root/.npm \
@@ -87,8 +87,11 @@ FROM base AS runtime-base
 ENV NODE_ENV=production
 COPY docker/service-entrypoint.sh /usr/local/bin/pulso-service
 # Remove o CR de um checkout com CRLF (Windows): com ele, o shebang vira "/bin/sh\r".
+# /var/lib/pulso/identity-keys: chaves do JWT do identity (volume próprio, gravável pelo
+# usuário node; um volume novo herda o dono e a permissão da pasta da imagem).
 RUN sed -i 's/\r$//' /usr/local/bin/pulso-service \
-  && chmod 755 /usr/local/bin/pulso-service
+  && chmod 755 /usr/local/bin/pulso-service \
+  && install -d -o node -g node -m 700 /var/lib/pulso/identity-keys
 COPY --from=prod-deps /app ./
 COPY --from=build /out ./
 

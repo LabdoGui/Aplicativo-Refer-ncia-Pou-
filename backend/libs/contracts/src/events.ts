@@ -1,5 +1,5 @@
 import type { Role } from './roles';
-import type { StockStatus } from './domain';
+import type { BloodType, CancelledBy, StockStatus } from './domain';
 
 /**
  * Eventos de domínio publicados no exchange `pulso.events` (RabbitMQ, tipo topic).
@@ -16,13 +16,13 @@ export const EVENTS = {
   APPOINTMENT_CANCELLED: 'scheduling.appointment.cancelled',
   APPOINTMENT_RESCHEDULED: 'scheduling.appointment.rescheduled',
   APPOINTMENT_REMINDER_DUE: 'scheduling.appointment.reminder_due',
-  APPOINTMENT_CHECKED_IN: 'scheduling.appointment.checked_in',
   ATTENDANCE_COMPLETED: 'clinical.attendance.completed',
   DONATION_COMPLETED: 'clinical.donation.completed',
   DOCUMENT_ISSUED: 'clinical.document.issued',
   STOCK_LEVEL_CHANGED: 'inventory.stock.level_changed',
   ACHIEVEMENT_UNLOCKED: 'engagement.achievement.unlocked',
   POINTS_AWARDED: 'engagement.points.awarded',
+  HOURS_REVIEWED: 'engagement.hours.reviewed',
 } as const;
 
 export type EventType = (typeof EVENTS)[keyof typeof EVENTS];
@@ -46,8 +46,9 @@ export interface AppointmentBookedData {
 export interface AppointmentCancelledData {
   appointmentId: string;
   donorId: string;
+  unitName: string;
   startsAt: string;
-  cancelledBy: 'DONOR' | 'STAFF' | 'SYSTEM';
+  cancelledBy: CancelledBy;
 }
 
 export interface AppointmentRescheduledData {
@@ -65,17 +66,15 @@ export interface AppointmentReminderDueData {
   startsAt: string;
 }
 
-export interface AppointmentCheckedInData {
-  appointmentId: string;
-  donorId: string;
-  unitId: string;
-}
-
+/**
+ * Atendimento finalizado (com ou sem doação). `attendanceId` é o id da triagem
+ * profissional, que representa o atendimento.
+ */
 export interface AttendanceCompletedData {
+  attendanceId: string;
   appointmentId: string | null;
   donorId: string;
   unitId: string;
-  screeningId: string;
   donationCompleted: boolean;
   donationId: string | null;
   campaignId: string | null;
@@ -87,6 +86,7 @@ export interface DonationCompletedData {
   code: string;
   donorId: string;
   unitId: string;
+  attendanceId: string;
   campaignId: string | null;
   occurredAt: string;
 }
@@ -94,10 +94,11 @@ export interface DonationCompletedData {
 export interface DocumentIssuedData {
   documentId: string;
   donorId: string;
+  title: string;
 }
 
 export interface StockLevelChangedData {
-  bloodType: string;
+  bloodType: BloodType;
   previousStatus: StockStatus;
   status: StockStatus;
   quantity: number;
@@ -116,19 +117,27 @@ export interface PointsAwardedData {
   totalPoints: number;
 }
 
+export interface HoursReviewedData {
+  hoursId: string;
+  donorId: string;
+  hours: number;
+  status: 'APPROVED' | 'REJECTED';
+  institutionName: string;
+}
+
 export interface EventPayloads {
   'identity.user.registered': UserRegisteredData;
   'scheduling.appointment.booked': AppointmentBookedData;
   'scheduling.appointment.cancelled': AppointmentCancelledData;
   'scheduling.appointment.rescheduled': AppointmentRescheduledData;
   'scheduling.appointment.reminder_due': AppointmentReminderDueData;
-  'scheduling.appointment.checked_in': AppointmentCheckedInData;
   'clinical.attendance.completed': AttendanceCompletedData;
   'clinical.donation.completed': DonationCompletedData;
   'clinical.document.issued': DocumentIssuedData;
   'inventory.stock.level_changed': StockLevelChangedData;
   'engagement.achievement.unlocked': AchievementUnlockedData;
   'engagement.points.awarded': PointsAwardedData;
+  'engagement.hours.reviewed': HoursReviewedData;
 }
 
 /** Envelope inspirado no CloudEvents. */
