@@ -41,8 +41,14 @@ jobs:
 
   docker:
     name: Imagens Docker e smoke test
-    # Só em push na main: o build das 8 imagens é a etapa mais demorada.
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # Em pull requests, em push na main e na execução manual. É a única etapa que
+    # sobe os processos de verdade (módulos Nest, banco, broker e nginx), então erros
+    # de configuração e inicialização aparecem antes do merge. Pushes em outros
+    # ramos ficam de fora: o build das 8 imagens é a etapa mais demorada.
+    if: >-
+      github.event_name == 'pull_request' ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/main')
     needs: build-test
     runs-on: ubuntu-latest
     timeout-minutes: 30

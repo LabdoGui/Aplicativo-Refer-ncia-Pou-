@@ -1,6 +1,7 @@
-import type { ExecutionContext } from '@nestjs/common';
+import { Logger, type ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { HEADERS, type AuthUser } from '@pulso/contracts';
+import { errors } from 'jose';
 import type { BaseEnv } from '../config/env';
 import { AppException } from '../errors/app.exception';
 import { AuthGuard } from './auth.guard';
@@ -20,12 +21,29 @@ const USERS: Record<string, AuthUser> = {
   'token-admin': { id: 'u-admin', role: 'ADMIN', name: 'Admin Fictício', unitIds: [] },
 };
 
-/** Verificador falso: aceita apenas os tokens de USERS. */
+/** Tokens que simulam falhas de infraestrutura ao validar (não são problema da credencial). */
+const UNAVAILABLE_ERRORS: Record<string, () => Error> = {
+  'token-jwks-lento': () => new errors.JWKSTimeout(),
+  'token-jwks-404': () =>
+    new errors.JOSEError('Expected 200 OK from the JSON Web Key Set HTTP response'),
+  'token-jwks-invalido': () => new errors.JWKSInvalid(),
+  'token-rede': () =>
+    Object.assign(new Error('connect ECONNREFUSED 127.0.0.1:3001'), {
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+    }),
+};
+
+/** Verificador falso: aceita apenas os tokens de USERS; os demais falham como o jose falharia. */
 const fakeVerifier: TokenVerifier = {
   verify: async (token) => {
     const user = USERS[token];
-    if (!user) throw new Error('assinatura inválida');
-    return user;
+    if (user) return user;
+    const unavailable = UNAVAILABLE_ERRORS[token];
+    if (unavailable) throw unavailable();
+    if (token === 'token-vencido')
+      throw new errors.JWTExpired('"exp" claim timestamp check failed', {});
+    throw new errors.JWSSignatureVerificationFailed();
   },
 };
 
@@ -53,15 +71,31 @@ class AdminController {
   donorOverride() {}
 }
 
+/** Recurso com leitura pública e escrita restrita (ex.: campanhas, unidades). */
+@Public()
+class PublicResourceController {
+  list() {}
+
+  @Roles('ADMIN')
+  create() {}
+
+  @RequirePermissions('campaign:manage')
+  update() {}
+}
+
+type AnyController =
+  typeof FakeController | typeof AdminController | typeof PublicResourceController;
+type AnyHandler = keyof FakeController | keyof AdminController | keyof PublicResourceController;
+
 interface FakeRequest {
   headers: Record<string, string | undefined>;
   user?: AuthUser;
 }
 
 function createContext(
-  handler: keyof FakeController | keyof AdminController,
+  handler: AnyHandler,
   headers: Record<string, string> = {},
-  controller: typeof FakeController | typeof AdminController = FakeController,
+  controller: AnyController = FakeController,
 ): { context: ExecutionContext; request: FakeRequest } {
   const request: FakeRequest = { headers };
   const context = {
@@ -93,6 +127,15 @@ describe('AuthGuard', () => {
   const guard = new AuthGuard(new Reflector(), fakeVerifier, {
     INTERNAL_API_TOKEN: INTERNAL_TOKEN,
   } as BaseEnv);
+  let errorLog: jest.SpyInstance;
+  let warnLog: jest.SpyInstance;
+
+  beforeEach(() => {
+    errorLog = jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+    warnLog = jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+  });
+
+  afterEach(() => jest.restoreAllMocks());
 
   describe('rotas públicas', () => {
     it('permite acesso sem token', async () => {
@@ -135,6 +178,13 @@ describe('AuthGuard', () => {
 
       await expectAppException(guard.canActivate(context), 401, 'TOKEN_INVALID');
       expect(request.user).toBeUndefined();
+    });
+
+    it('rejeita token vencido (401 TOKEN_INVALID), sem registrar erro', async () => {
+      const { context } = createContext('protectedRoute', bearer('token-vencido'));
+
+      await expectAppException(guard.canActivate(context), 401, 'TOKEN_INVALID');
+      expect(errorLog).not.toHaveBeenCalled();
     });
 
     it('aceita token válido, com esquema em qualquer caixa, e anexa o usuário', async () => {
@@ -192,6 +242,97 @@ describe('AuthGuard', () => {
       const { context } = createContext('screeningRoute');
 
       await expectAppException(guard.canActivate(context), 401, 'AUTH_REQUIRED');
+    });
+  });
+
+  describe('@Public na classe com @Roles/@RequirePermissions no método', () => {
+    it('mantém pública a rota sem exigência de papel', async () => {
+      const { context } = createContext('list', {}, PublicResourceController);
+
+      await expect(guard.canActivate(context)).resolves.toBe(true);
+    });
+
+    it.each(['create', 'update'] as const)(
+      '%s: exige token (401 AUTH_REQUIRED)',
+      async (handler) => {
+        const { context } = createContext(handler, {}, PublicResourceController);
+
+        await expectAppException(guard.canActivate(context), 401, 'AUTH_REQUIRED');
+      },
+    );
+
+    it.each(['create', 'update'] as const)(
+      '%s: rejeita token inválido (401 TOKEN_INVALID)',
+      async (handler) => {
+        const { context, request } = createContext(
+          handler,
+          bearer('token-falso'),
+          PublicResourceController,
+        );
+
+        await expectAppException(guard.canActivate(context), 401, 'TOKEN_INVALID');
+        expect(request.user).toBeUndefined();
+      },
+    );
+
+    it('nega papel errado (403 FORBIDDEN_ROLE)', async () => {
+      const { context } = createContext('create', bearer('token-doador'), PublicResourceController);
+
+      await expectAppException(guard.canActivate(context), 403, 'FORBIDDEN_ROLE');
+    });
+
+    it('nega quem não tem a permissão (403 FORBIDDEN_PERMISSION)', async () => {
+      const { context } = createContext(
+        'update',
+        bearer('token-enfermeiro'),
+        PublicResourceController,
+      );
+
+      await expectAppException(guard.canActivate(context), 403, 'FORBIDDEN_PERMISSION');
+    });
+
+    it.each(['create', 'update'] as const)('%s: permite o ADMIN', async (handler) => {
+      const { context, request } = createContext(
+        handler,
+        bearer('token-admin'),
+        PublicResourceController,
+      );
+
+      await expect(guard.canActivate(context)).resolves.toBe(true);
+      expect(request.user?.role).toBe('ADMIN');
+    });
+  });
+
+  describe('falha ao validar o token por indisponibilidade', () => {
+    it.each(Object.keys(UNAVAILABLE_ERRORS))(
+      '%s: responde 503 AUTH_UNAVAILABLE e registra a causa como erro',
+      async (token) => {
+        const { context, request } = createContext('protectedRoute', bearer(token));
+
+        await expectAppException(guard.canActivate(context), 503, 'AUTH_UNAVAILABLE');
+        expect(request.user).toBeUndefined();
+        expect(errorLog).toHaveBeenCalledTimes(1);
+        expect(errorLog.mock.calls[0][0]).toMatchObject({ err: expect.any(Error) });
+      },
+    );
+
+    it('também vale para rota com @Roles em classe pública', async () => {
+      const { context } = createContext(
+        'create',
+        bearer('token-jwks-lento'),
+        PublicResourceController,
+      );
+
+      await expectAppException(guard.canActivate(context), 503, 'AUTH_UNAVAILABLE');
+    });
+
+    it('em rota pública segue como anônimo e registra um aviso', async () => {
+      const { context, request } = createContext('publicRoute', bearer('token-jwks-lento'));
+
+      await expect(guard.canActivate(context)).resolves.toBe(true);
+      expect(request.user).toBeUndefined();
+      expect(warnLog).toHaveBeenCalledTimes(1);
+      expect(errorLog).not.toHaveBeenCalled();
     });
   });
 

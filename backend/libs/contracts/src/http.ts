@@ -37,6 +37,17 @@ export const HEADERS = {
   internalToken: 'x-internal-token',
 } as const;
 
+/**
+ * Formato aceito para o x-request-id vindo do cliente. O nginx usa a mesma
+ * expressão (docker/nginx.conf): mantenha as duas iguais.
+ */
+export const REQUEST_ID_PATTERN = /^[A-Za-z0-9._:-]{8,128}$/;
+
+/** Indica se o valor pode ser reaproveitado como id da requisição. */
+export function isValidRequestId(value: unknown): value is string {
+  return typeof value === 'string' && REQUEST_ID_PATTERN.test(value);
+}
+
 export interface HealthCheckResult {
   status: 'up' | 'down';
   service: string;

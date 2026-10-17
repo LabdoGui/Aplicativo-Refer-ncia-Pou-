@@ -1,14 +1,19 @@
 import { createRemoteJWKSet, jwtVerify, type JWTPayload, type KeyLike } from 'jose';
 import { JWT_AUDIENCE, JWT_ISSUER, ROLES, type AuthUser, type Role } from '@pulso/contracts';
+import { TokenVerificationError } from './token-verification-error';
 
 export interface TokenVerifier {
+  /**
+   * Valida o token e devolve o usuário. Os erros são classificados por
+   * `classifyVerificationError` (credencial inválida × indisponibilidade).
+   */
   verify(token: string): Promise<AuthUser>;
 }
 
 export function claimsToUser(payload: JWTPayload): AuthUser {
   const role = payload.role as Role;
   if (typeof payload.sub !== 'string' || !ROLES.includes(role)) {
-    throw new Error('Token sem claims obrigatórias');
+    throw new TokenVerificationError('invalid', 'Token sem claims obrigatórias');
   }
   return {
     id: payload.sub,

@@ -17,8 +17,6 @@ export interface CoreModuleOptions<S extends z.ZodTypeAny> {
   envSchema: S;
   /** Substitui o verificador de JWT padrão (JWKS remoto). Usado pelo identity-service. */
   tokenVerifier?: Omit<Provider, 'provide'> & Record<string, unknown>;
-  /** Desliga o guard global de autenticação (o gateway valida via middleware). */
-  disableAuthGuard?: boolean;
 }
 
 /**
@@ -41,11 +39,9 @@ export class CoreModule {
       { provide: SERVICE_NAME, useValue: options.serviceName },
       verifierProvider,
       { provide: APP_FILTER, useClass: ProblemDetailsFilter },
+      { provide: APP_GUARD, useClass: AuthGuard },
       InternalHttpClient,
     ];
-    if (!options.disableAuthGuard) {
-      providers.push({ provide: APP_GUARD, useClass: AuthGuard });
-    }
 
     return {
       module: CoreModule,

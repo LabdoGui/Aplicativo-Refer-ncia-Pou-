@@ -17,6 +17,7 @@ function configure(app: NestExpressApplication): void {
   });
 
   // Rotas do próprio gateway entram no OpenAPI unificado servido em /api/docs.
+  if (!config.DOCS_ENABLED) return;
   const gatewayDocument = SwaggerModule.createDocument(
     app,
     new DocumentBuilder()

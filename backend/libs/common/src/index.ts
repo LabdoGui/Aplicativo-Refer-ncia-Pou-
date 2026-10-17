@@ -8,6 +8,7 @@ export * from './errors/problem-details.filter';
 export * from './errors/validation';
 export * from './auth/decorators';
 export * from './auth/token-verifier';
+export * from './auth/token-verification-error';
 export * from './auth/auth.guard';
 export * from './health/health';
 export * from './messaging/broker';

@@ -7,8 +7,10 @@ import { ServicesHealthModule } from './health/services-health.module';
 
 @Module({
   imports: [
-    // O guard global fica desligado: a autenticação de borda é feita por middleware.
-    CoreModule.forRoot({ serviceName: 'gateway', envSchema, disableAuthGuard: true }),
+    // O AuthGuard global protege as rotas do próprio gateway (as abertas usam @Public()).
+    // Requisições encaminhadas aos serviços terminam no ProxyMiddleware, antes do guard:
+    // lá vale a validação de borda (EdgeAuthMiddleware) e o guard de cada serviço.
+    CoreModule.forRoot({ serviceName: 'gateway', envSchema }),
     HealthModule.forRoot(),
     EdgeModule,
     ServicesHealthModule,

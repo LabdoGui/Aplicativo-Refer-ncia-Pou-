@@ -29,7 +29,7 @@ export function BottomNav({ items, label, className }: BottomNavProps) {
               end={end}
               className={({ isActive }) =>
                 cn(
-                  'flex min-h-16 flex-col items-center justify-center gap-1 px-1 text-xs transition-colors',
+                  'flex min-h-16 flex-col items-center justify-center gap-1 text-xs transition-colors',
                   isActive
                     ? 'font-semibold text-petroleo-800'
                     : 'font-medium text-ink-muted hover:text-ink',
@@ -50,7 +50,14 @@ export function BottomNav({ items, label, className }: BottomNavProps) {
                       strokeWidth={isActive ? 2.25 : 1.75}
                     />
                   </span>
-                  <span className="max-w-full truncate">{itemLabel}</span>
+                  {/*
+                   * Rótulo com a largura toda da coluna (sem padding lateral). Abaixo de 360 px
+                   * (docs/03, RNF20) a fonte fica um pouco menor e mais justa, para que
+                   * "Conquistas" caiba também em 320 px; o truncate é só uma rede de segurança.
+                   */}
+                  <span className="max-w-full truncate text-[0.6875rem] tracking-tight min-[360px]:text-xs min-[360px]:tracking-normal">
+                    {itemLabel}
+                  </span>
                 </>
               )}
             </NavLink>

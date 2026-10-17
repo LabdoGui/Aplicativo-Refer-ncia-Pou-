@@ -16,6 +16,12 @@ const originList = z
 
 const positiveInt = (fallback: number) => z.coerce.number().int().positive().default(fallback);
 
+const booleanFlag = (fallback: 'true' | 'false') =>
+  z
+    .enum(['true', 'false'])
+    .default(fallback)
+    .transform((value) => value === 'true');
+
 /** Variáveis de ambiente do gateway. */
 export const envSchema = baseEnvSchema.extend({
   IDENTITY_URL: z.string().url(),
@@ -28,6 +34,8 @@ export const envSchema = baseEnvSchema.extend({
   RATE_LIMIT_WINDOW_MS: positiveInt(60_000),
   RATE_LIMIT_MAX: positiveInt(300),
   AUTH_RATE_LIMIT_MAX: positiveInt(20),
+  /** Documentação unificada em /api/docs e /api/docs-json; com "false", essas rotas respondem 404. */
+  DOCS_ENABLED: booleanFlag('true'),
 });
 
 export type GatewayEnv = z.infer<typeof envSchema>;

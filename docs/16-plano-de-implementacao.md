@@ -270,8 +270,19 @@ sequenceDiagram
 | Seeds inconsistentes entre serviços | Conjunto de dados fictícios determinístico compartilhado (`@pulso/contracts/seed`) com UUIDs fixos |
 | Regras clínicas inventadas | Perguntas e regras em tabelas, com `validationStatus = PENDING_VALIDATION` e desfecho que só orienta (nunca "inapto") |
 | Chaves JWT entre serviços | JWKS publicado pelo identity; serviços buscam e fazem cache |
-| Memória e tempo de build no Docker | Imagem única parametrizada (`docker/service.Dockerfile`, `ARG SERVICE`), Node Alpine |
+| Memória e tempo de build no Docker | Imagem única parametrizada (`docker/service.Dockerfile`, `ARG SERVICE_DIR`), Node Alpine |
+| `prisma migrate dev` sem permissão para criar bancos (os usuários dos serviços não têm `CREATEDB`) | Banco de sombra `pulso_shadow` criado por `database/init/01-init.sh`, com um schema por serviço (`SHADOW_DATABASE_URL`; `shadowDatabaseUrl` nos `schema.prisma` na Fase 2). Como os usuários também não criam schemas no banco principal, o reset de um serviço é feito pelo superusuário (README, "Banco de dados"), nunca com `prisma migrate reset` |
 | Escopo excessivo | Fases com critério de pronto; qualidade antes de quantidade |
+
+### Backlog de segurança (Fase 13)
+
+Limitações conhecidas e aceitas por enquanto, registradas para não se perderem:
+
+| Item | Situação atual | O que fazer |
+|---|---|---|
+| Usuários do RabbitMQ por serviço | Os 6 serviços conectam como o administrador do broker (`RABBITMQ_USER`, permissão `.* .* .*` no vhost `/`). Qualquer serviço pode publicar qualquer evento (ex.: o notification forjar `clinical.donation.completed`, que vira pontos no engagement), consumir ou apagar filas de outros e remover exchanges, contrariando o menor privilégio do [doc 10](10-seguranca-lgpd.md) | Um usuário por serviço, criado por um `definitions.json` carregado pelo contêiner do RabbitMQ (ou script de init): `write` só em `pulso.events` (e nas próprias filas), com *topic permissions* que limitam a publicação às routing keys iniciadas por `<serviço>.`; `configure` só nas próprias filas; `read` nas próprias filas e em `pulso.events` (exigido pelo bind). O administrador fica só para a interface de gestão |
+| Rate limit em memória | Janela fixa em memória no gateway (`FixedWindowRateLimiter`): zera a cada reinício e não é compartilhada entre réplicas | Com mais de uma réplica do gateway, mover os contadores para um armazenamento comum (ex.: Redis); revisar os limites das rotas de autenticação no teste de carga |
+| Volume das chaves do identity | O par de chaves RSA do JWT (item 7) ainda não tem volume no `docker-compose.yml`: sem ele, recriar o contêiner troca a chave e derruba todas as sessões | Fase 2: volume nomeado só do identity, fora da imagem e do repositório. O diretório precisa existir na imagem com dono `node` (o processo roda sem root, e um volume novo herda o dono do diretório). Em produção, chave por segredo/variável de ambiente e rotação com dois `kid` no JWKS |
 
 ---
 

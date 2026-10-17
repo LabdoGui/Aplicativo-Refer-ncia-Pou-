@@ -25,6 +25,10 @@ export default defineConfig({
       { find: /^@\//, replacement: `${fromHere('./src')}/` },
     ],
   },
+  build: {
+    // Fontes nunca viram data: URI (o CSP do nginx só aceita fontes de 'self').
+    assetsInlineLimit: (filePath) => (/\.woff2?$/.test(filePath) ? false : undefined),
+  },
   server: {
     port: 5173,
     strictPort: true,

@@ -7,7 +7,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
-import type { ProblemDetails } from '@pulso/contracts';
+import { HEADERS, isValidRequestId, type ProblemDetails } from '@pulso/contracts';
 import { AppException } from './app.exception';
 
 const DEFAULTS: Record<number, { code: string; title: string; detail: string }> = {
@@ -36,6 +36,16 @@ const DEFAULTS: Record<number, { code: string; title: string; detail: string }> 
     title: 'Conflito',
     detail:
       'A operação conflita com o estado atual dos dados. Atualize a página e tente novamente.',
+  },
+  413: {
+    code: 'PAYLOAD_TOO_LARGE',
+    title: 'Conteúdo grande demais',
+    detail: 'O conteúdo enviado é grande demais.',
+  },
+  415: {
+    code: 'UNSUPPORTED_MEDIA_TYPE',
+    title: 'Formato não suportado',
+    detail: 'O formato do conteúdo enviado não é suportado. Envie os dados em JSON (UTF-8).',
   },
   422: {
     code: 'UNPROCESSABLE',
@@ -66,6 +76,26 @@ interface PrismaLikeError {
   meta?: Record<string, unknown>;
 }
 
+/**
+ * Status 4xx de erros no padrão `http-errors` (lançados pelo body-parser: corpo
+ * grande demais, JSON malformado, charset ou encoding não suportado). Só vale
+ * para os marcados com `expose`, isto é, causados pela requisição do cliente.
+ */
+function exposedClientErrorStatus(error: unknown): number | undefined {
+  if (typeof error !== 'object' || error === null || error instanceof HttpException) {
+    return undefined;
+  }
+  const { status, statusCode, expose } = error as {
+    status?: unknown;
+    statusCode?: unknown;
+    expose?: unknown;
+  };
+  const value = typeof status === 'number' ? status : statusCode;
+  return expose === true && typeof value === 'number' && value >= 400 && value < 500
+    ? value
+    : undefined;
+}
+
 function isPrismaKnownError(error: unknown): error is PrismaLikeError {
   return (
     typeof error === 'object' &&
@@ -88,7 +118,9 @@ export class ProblemDetailsFilter implements ExceptionFilter {
     const http = host.switchToHttp();
     const request = http.getRequest<Request & { id?: string }>();
     const response = http.getResponse<Response>();
-    const requestId = (request.id as string | undefined) ?? request.header('x-request-id');
+    const incomingId = request.header(HEADERS.requestId);
+    const requestId =
+      (request.id as string | undefined) ?? (isValidRequestId(incomingId) ? incomingId : undefined);
 
     const problem = this.toProblem(exception);
     problem.instance = request.originalUrl;
@@ -109,6 +141,16 @@ export class ProblemDetailsFilter implements ExceptionFilter {
       this.logger.warn(
         { requestId, path: request.originalUrl, code: problem.code },
         'Acesso negado',
+      );
+    } else if (exposedClientErrorStatus(exception) !== undefined) {
+      this.logger.warn(
+        {
+          requestId,
+          path: request.originalUrl,
+          code: problem.code,
+          reason: (exception as { type?: unknown }).type,
+        },
+        'Requisição rejeitada antes de chegar à rota',
       );
     }
 
@@ -151,6 +193,13 @@ export class ProblemDetailsFilter implements ExceptionFilter {
         );
       }
       return this.build(status, base.code, base.title, base.detail);
+    }
+
+    const clientStatus = exposedClientErrorStatus(exception);
+    if (clientStatus !== undefined) {
+      // Mensagem do body-parser (em inglês) não chega ao usuário.
+      const base = DEFAULTS[clientStatus] ?? DEFAULTS[400];
+      return this.build(clientStatus, base.code, base.title, base.detail);
     }
 
     if (isPrismaKnownError(exception)) {

@@ -52,6 +52,9 @@ const COLLABORATOR_PERMISSIONS: Permission[] = [
   'donor:read-summary',
 ];
 
+/** Permissões de equipe que o administrador também tem (consulta, sem atendimento). */
+const ADMIN_STAFF_PERMISSIONS: Permission[] = ['agenda:read', 'donor:read-summary'];
+
 export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
   DONOR: [
     'self:profile',
@@ -68,9 +71,10 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'screening:perform',
     'donation:record',
   ],
-  // O administrador NÃO realiza triagem nem lê dados clínicos (segregação de funções).
+  // O administrador NÃO faz check-in, triagem nem lê dados clínicos (segregação de funções):
+  // check-in e falta são trabalho da equipe da unidade (docs/16, seção 4).
   ADMIN: [
-    ...COLLABORATOR_PERMISSIONS,
+    ...ADMIN_STAFF_PERMISSIONS,
     'unit:manage',
     'schedule:manage',
     'campaign:manage',

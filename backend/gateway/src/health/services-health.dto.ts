@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { SERVICE_NAMES, type ServiceName } from '@pulso/contracts';
+import { SERVICE_NAMES, type HealthCheckResult, type ServiceName } from '@pulso/contracts';
 
 export type ComponentStatus = 'up' | 'down';
 export type OverallStatus = 'up' | 'degraded' | 'down';
@@ -32,6 +32,32 @@ export class ServiceHealthDto {
   /** Tempo de resposta do health check, em milissegundos (`null` se não respondeu). */
   @ApiProperty({ type: Number, nullable: true, example: 12 })
   latencyMs: number | null;
+}
+
+export class GatewayHealthDto implements HealthCheckResult {
+  /** `up` quando o gateway está respondendo. */
+  @ApiProperty({ enum: ['up', 'down'], example: 'up' })
+  status: ComponentStatus;
+
+  /** Nome do processo. */
+  @ApiProperty({ example: 'gateway' })
+  service: string;
+
+  /** Versão do gateway. */
+  @ApiProperty({ example: '0.1.0' })
+  version: string;
+
+  /** Tempo desde o início do processo, em segundos. */
+  @ApiProperty({ example: 3600 })
+  uptimeSeconds: number;
+
+  /** Dependências verificadas (nenhuma: o estado dos serviços está em /health/services). */
+  @ApiProperty({
+    type: 'object',
+    additionalProperties: { type: 'string', enum: ['up', 'down'] },
+    example: {},
+  })
+  checks: Record<string, ComponentStatus>;
 }
 
 export class ServicesHealthDto {

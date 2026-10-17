@@ -13,8 +13,13 @@ export function RouteAnnouncer() {
   useEffect(() => {
     if (previousPathname.current === pathname) return;
     previousPathname.current = pathname;
-    // As páginas definem document.title em efeitos próprios, que rodam antes deste.
-    setMessage(document.title);
+    // As páginas definem document.title nos próprios efeitos (useDocumentTitle), e a ordem
+    // dos efeitos entre componentes irmãos não é garantida para este caso. Por isso a leitura
+    // fica para a próxima tarefa, quando todos os efeitos desta renderização já rodaram.
+    // Limpar antes garante um novo anúncio mesmo se o título se repetir.
+    setMessage('');
+    const timer = window.setTimeout(() => setMessage(document.title), 0);
+    return () => window.clearTimeout(timer);
   }, [pathname]);
 
   return (

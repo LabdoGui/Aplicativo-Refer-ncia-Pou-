@@ -17,7 +17,16 @@ function serviceTitle(service: ServiceHealth): string {
   return service.title ?? SERVICES[service.name as ServiceName]?.title ?? service.name;
 }
 
-export function ServiceStatusCard({ service }: { service: ServiceHealth }) {
+interface ServiceStatusCardProps {
+  service: ServiceHealth;
+  /**
+   * Dados antigos (a última consulta falhou): os estados aparecem em cinza, sem a cor de
+   * "funcionando" ou "fora do ar", porque a situação atual é desconhecida.
+   */
+  stale?: boolean;
+}
+
+export function ServiceStatusCard({ service, stale = false }: ServiceStatusCardProps) {
   const status = presentServiceStatus(service.status);
   const checks = Object.entries(service.checks ?? {});
   const titleId = `servico-${service.name}`;
@@ -31,7 +40,7 @@ export function ServiceStatusCard({ service }: { service: ServiceHealth }) {
           </h3>
           <p className="font-mono text-xs text-ink-muted">{service.name}</p>
         </div>
-        <StatusPill status={status.tone} label={status.label} size="sm" />
+        <StatusPill status={stale ? 'unknown' : status.tone} label={status.label} size="sm" />
       </div>
 
       <dl className="space-y-2 text-sm">
@@ -39,7 +48,7 @@ export function ServiceStatusCard({ service }: { service: ServiceHealth }) {
           const check = presentCheckStatus(value);
           return (
             <Row key={name} label={checkLabel(name)}>
-              <StatusPill status={check.tone} label={check.label} size="sm" />
+              <StatusPill status={stale ? 'unknown' : check.tone} label={check.label} size="sm" />
             </Row>
           );
         })}

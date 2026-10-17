@@ -1,6 +1,8 @@
-import { Controller, Get, NotFoundException, Param, Res } from '@nestjs/common';
+import { Controller, Get, NotFoundException, Param, Res, UseGuards } from '@nestjs/common';
 import { ApiExcludeController, type OpenAPIObject } from '@nestjs/swagger';
 import type { Response } from 'express';
+import { Public } from '@pulso/common';
+import { DocsEnabledGuard } from './docs-enabled.guard';
 import { DocsService } from './docs.service';
 import {
   DOCS_PAGE,
@@ -12,8 +14,13 @@ import {
 
 const ASSET_MAX_AGE_MS = 60 * 60 * 1000;
 
-/** Documentação unificada: GET /api/docs (Swagger UI) e GET /api/docs-json (OpenAPI). */
+/**
+ * Documentação unificada: GET /api/docs (Swagger UI) e GET /api/docs-json (OpenAPI).
+ * Pública, mas pode ser desligada com DOCS_ENABLED=false (as rotas passam a responder 404).
+ */
 @ApiExcludeController()
+@Public()
+@UseGuards(DocsEnabledGuard)
 @Controller('api')
 export class DocsController {
   constructor(private readonly docs: DocsService) {}

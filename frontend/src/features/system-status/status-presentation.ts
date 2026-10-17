@@ -12,11 +12,29 @@ export const SERVICE_STATUS: Record<HealthStatus, StatusPresentation> = {
   down: { tone: 'critical', label: 'Fora do ar' },
 };
 
-export const OVERALL_SUMMARY: Record<HealthStatus, string> = {
+const OVERALL_SUMMARY: Record<HealthStatus, string> = {
   up: 'Todos os serviços estão funcionando normalmente.',
   degraded: 'Alguns serviços estão instáveis. Parte das funcionalidades pode falhar.',
   down: 'Serviços indisponíveis no momento. Estamos aguardando o retorno.',
 };
+
+/** Estado geral quando a última consulta falhou: os dados exibidos são antigos. */
+export const STALE_OVERALL_STATUS: StatusPresentation = {
+  tone: 'unknown',
+  label: 'Situação atual desconhecida',
+};
+
+/** Resumo no passado, para não apresentar dados antigos como se fossem a situação atual. */
+const STALE_OVERALL_SUMMARY: Record<HealthStatus, string> = {
+  up: 'Na última consulta bem-sucedida, todos os serviços estavam funcionando normalmente.',
+  degraded: 'Na última consulta bem-sucedida, alguns serviços estavam instáveis.',
+  down: 'Na última consulta bem-sucedida, os serviços estavam indisponíveis.',
+};
+
+export function overallSummary(status: string, stale = false): string {
+  const summaries = stale ? STALE_OVERALL_SUMMARY : OVERALL_SUMMARY;
+  return summaries[status as HealthStatus] ?? 'Não foi possível interpretar o estado geral.';
+}
 
 export const CHECK_STATUS: Record<CheckStatus, StatusPresentation> = {
   up: { tone: 'ok', label: 'Conectado' },

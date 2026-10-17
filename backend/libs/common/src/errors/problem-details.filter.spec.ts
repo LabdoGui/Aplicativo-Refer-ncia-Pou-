@@ -73,12 +73,24 @@ function handle(exception: unknown, options?: Parameters<typeof createHost>[0]) 
   return captured;
 }
 
+/** Erro no formato do `http-errors`, como o body-parser lança. */
+function httpError(status: number, type: string, message: string): Error {
+  return Object.assign(new Error(message), {
+    name: 'HttpError',
+    status,
+    statusCode: status,
+    expose: status < 500,
+    type,
+  });
+}
+
 describe('ProblemDetailsFilter', () => {
   let errorLog: jest.SpyInstance;
+  let warnLog: jest.SpyInstance;
 
   beforeEach(() => {
     errorLog = jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
-    jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+    warnLog = jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
   });
 
   afterEach(() => jest.restoreAllMocks());
@@ -216,6 +228,67 @@ describe('ProblemDetailsFilter', () => {
     });
   });
 
+  it('corpo grande demais (body-parser) vira 413 PAYLOAD_TOO_LARGE, com aviso e sem erro 500', () => {
+    const { statusCode, body } = handle(
+      httpError(413, 'entity.too.large', 'request entity too large'),
+    );
+
+    expect(statusCode).toBe(413);
+    expect(body).toMatchObject({
+      status: 413,
+      code: 'PAYLOAD_TOO_LARGE',
+      detail: 'O conteúdo enviado é grande demais.',
+    });
+    expect(errorLog).not.toHaveBeenCalled();
+    expect(warnLog).toHaveBeenCalledWith(
+      expect.objectContaining({ code: 'PAYLOAD_TOO_LARGE', reason: 'entity.too.large' }),
+      expect.any(String),
+    );
+  });
+
+  it('charset ou encoding não suportado vira 415 UNSUPPORTED_MEDIA_TYPE', () => {
+    const { statusCode, body } = handle(
+      httpError(415, 'charset.unsupported', 'unsupported charset "LATIN1"'),
+    );
+
+    expect(statusCode).toBe(415);
+    expect(body?.code).toBe('UNSUPPORTED_MEDIA_TYPE');
+    expect(JSON.stringify(body)).not.toContain('LATIN1');
+    expect(errorLog).not.toHaveBeenCalled();
+  });
+
+  it('JSON malformado (body-parser) vira 400 com a mensagem padrão em português', () => {
+    const { statusCode, body } = handle(
+      httpError(400, 'entity.parse.failed', 'Unexpected token } in JSON at position 10'),
+    );
+
+    expect(statusCode).toBe(400);
+    expect(body).toMatchObject({
+      code: 'BAD_REQUEST',
+      detail: 'Verifique os dados informados e tente novamente.',
+    });
+    expect(errorLog).not.toHaveBeenCalled();
+  });
+
+  it('outro status 4xx exposto usa o padrão do status, ou o de 400', () => {
+    expect(handle(httpError(404, 'x', 'not found')).body).toMatchObject({
+      status: 404,
+      code: 'NOT_FOUND',
+    });
+    expect(handle(httpError(431, 'x', 'headers too large')).body).toMatchObject({
+      status: 431,
+      code: 'BAD_REQUEST',
+    });
+  });
+
+  it('erro com status 5xx ou não exposto continua 500 genérico e registrado', () => {
+    const notExposed = Object.assign(new Error('falha interna'), { status: 400, expose: false });
+
+    expect(handle(httpError(502, 'x', 'bad gateway')).statusCode).toBe(500);
+    expect(handle(notExposed).statusCode).toBe(500);
+    expect(errorLog).toHaveBeenCalledTimes(2);
+  });
+
   it('responde com application/problem+json, instance e requestId do pino-http', () => {
     const { contentType, body } = handle(new NotFoundException(), {
       id: 'req-pino-1',
@@ -231,6 +304,15 @@ describe('ProblemDetailsFilter', () => {
 
     expect(body?.requestId).toBe('req-gw-7');
   });
+
+  it.each(['', 'curto', 'tem espaço 123', 'x'.repeat(129)])(
+    'ignora x-request-id fora do formato aceito (%j)',
+    (requestId) => {
+      const { body } = handle(new NotFoundException(), { headers: { 'x-request-id': requestId } });
+
+      expect(body?.requestId).toBeUndefined();
+    },
+  );
 
   it('não escreve a resposta se os cabeçalhos já foram enviados', () => {
     const { host, captured } = createHost();

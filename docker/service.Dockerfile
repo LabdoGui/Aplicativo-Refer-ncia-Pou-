@@ -85,7 +85,10 @@ RUN --mount=type=cache,target=/root/.npm \
 # somente leitura para o processo.
 FROM base AS runtime-base
 ENV NODE_ENV=production
-COPY --chmod=755 docker/service-entrypoint.sh /usr/local/bin/pulso-service
+COPY docker/service-entrypoint.sh /usr/local/bin/pulso-service
+# Remove o CR de um checkout com CRLF (Windows): com ele, o shebang vira "/bin/sh\r".
+RUN sed -i 's/\r$//' /usr/local/bin/pulso-service \
+  && chmod 755 /usr/local/bin/pulso-service
 COPY --from=prod-deps /app ./
 COPY --from=build /out ./
 

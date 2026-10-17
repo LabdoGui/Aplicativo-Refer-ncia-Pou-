@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { RequestMethod } from '@nestjs/common';
 import type { Params } from 'nestjs-pino';
-import { HEADERS } from '@pulso/contracts';
+import { HEADERS, isValidRequestId } from '@pulso/contracts';
 
 /**
  * Logs estruturados em JSON com `requestId` e nome do serviço.
@@ -15,9 +15,10 @@ export function buildLoggerParams(serviceName: string, level: string, pretty: bo
     pinoHttp: {
       level,
       base: { service: serviceName },
+      // Reaproveita o x-request-id do cliente só se tiver o formato aceito (mesma regra do nginx).
       genReqId: (request: IncomingMessage, response: ServerResponse) => {
         const incoming = request.headers[HEADERS.requestId];
-        const id = typeof incoming === 'string' && incoming.length <= 128 ? incoming : randomUUID();
+        const id = isValidRequestId(incoming) ? incoming : randomUUID();
         response.setHeader(HEADERS.requestId, id);
         return id;
       },

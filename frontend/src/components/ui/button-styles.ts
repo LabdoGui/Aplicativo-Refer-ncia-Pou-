@@ -11,9 +11,11 @@ export interface ButtonStyleOptions {
 }
 
 // Todas as alturas respeitam o alvo de toque mínimo de 44 px (WCAG 2.5.5 / docs/12).
+// aria-disabled (botão carregando) tem a mesma aparência de disabled, mas segue focável.
 const BASE =
   'inline-flex items-center justify-center gap-2 rounded-control font-semibold whitespace-nowrap ' +
-  'transition-colors duration-150 disabled:pointer-events-none disabled:opacity-60';
+  'transition-colors duration-150 disabled:pointer-events-none disabled:opacity-60 ' +
+  'aria-disabled:pointer-events-none aria-disabled:opacity-60';
 
 const VARIANTS: Record<ButtonVariant, string> = {
   // Carmim: só para a ação principal da tela.

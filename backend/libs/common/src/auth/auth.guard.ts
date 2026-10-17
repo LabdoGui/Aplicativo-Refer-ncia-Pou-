@@ -1,4 +1,4 @@
-import { CanActivate, ExecutionContext, Inject, Injectable } from '@nestjs/common';
+import { CanActivate, ExecutionContext, Inject, Injectable, Logger } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { timingSafeEqual } from 'node:crypto';
 import {
@@ -12,9 +12,12 @@ import { AppException } from '../errors/app.exception';
 import { APP_CONFIG, TOKEN_VERIFIER } from '../tokens';
 import type { BaseEnv } from '../config/env';
 import type { TokenVerifier } from './token-verifier';
+import { classifyVerificationError, tokenVerificationException } from './token-verification-error';
 import { IS_INTERNAL_KEY, IS_PUBLIC_KEY, PERMISSIONS_KEY, ROLES_KEY } from './decorators';
 
 interface GuardRequest {
+  id?: unknown;
+  originalUrl?: string;
   headers: Record<string, string | string[] | undefined>;
   user?: AuthUser;
 }
@@ -29,10 +32,14 @@ function safeEqual(a: string, b: string): boolean {
  * Guard global de autenticação e autorização.
  *
  * Ordem: rota interna (token de serviço) → JWT → papel → permissões.
+ * `@Roles`/`@RequirePermissions` sempre exigem token válido, mesmo em rota ou
+ * classe marcada com `@Public()`.
  * A posse do recurso (doador só acessa o que é seu) é verificada no caso de uso.
  */
 @Injectable()
 export class AuthGuard implements CanActivate {
+  private readonly logger = new Logger(AuthGuard.name);
+
   constructor(
     private readonly reflector: Reflector,
     @Inject(TOKEN_VERIFIER) private readonly verifier: TokenVerifier,
@@ -56,7 +63,16 @@ export class AuthGuard implements CanActivate {
       );
     }
 
-    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, targets) ?? false;
+    const roles = this.reflector.getAllAndOverride<Role[] | undefined>(ROLES_KEY, targets);
+    const permissions = this.reflector.getAllAndOverride<Permission[] | undefined>(
+      PERMISSIONS_KEY,
+      targets,
+    );
+    // Exigência de papel ou permissão vale mais que @Public (ex.: classe pública com método de ADMIN).
+    const requiresAuthorization = (roles?.length ?? 0) > 0 || (permissions?.length ?? 0) > 0;
+    const isPublic =
+      !requiresAuthorization &&
+      (this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, targets) ?? false);
     const token = this.extractBearer(request);
 
     if (!token) {
@@ -64,23 +80,32 @@ export class AuthGuard implements CanActivate {
       throw new AppException(401, 'AUTH_REQUIRED', 'Entre na sua conta para continuar.');
     }
 
+    let user: AuthUser;
     try {
-      request.user = await this.verifier.verify(token);
-    } catch {
-      if (isPublic) return true;
-      throw new AppException(401, 'TOKEN_INVALID', 'Sua sessão expirou. Entre novamente.');
+      user = await this.verifier.verify(token);
+    } catch (error) {
+      if (isPublic) {
+        // Rota pública: segue como anônimo, mas a indisponibilidade não passa em silêncio.
+        if (classifyVerificationError(error) === 'unavailable') {
+          this.logger.warn(
+            { err: error, requestId: request.id, path: request.originalUrl },
+            'Token não validado (chaves indisponíveis); seguindo como anônimo em rota pública',
+          );
+        }
+        return true;
+      }
+      throw tokenVerificationException(error, this.logger, {
+        requestId: request.id,
+        path: request.originalUrl,
+      });
     }
+    request.user = user;
 
-    const roles = this.reflector.getAllAndOverride<Role[] | undefined>(ROLES_KEY, targets);
-    if (roles && roles.length > 0 && !roles.includes(request.user.role)) {
+    if (roles && roles.length > 0 && !roles.includes(user.role)) {
       throw new AppException(403, 'FORBIDDEN_ROLE', 'Seu perfil não tem acesso a esta área.');
     }
 
-    const permissions = this.reflector.getAllAndOverride<Permission[] | undefined>(
-      PERMISSIONS_KEY,
-      targets,
-    );
-    if (permissions?.some((permission) => !hasPermission(request.user!.role, permission))) {
+    if (permissions?.some((permission) => !hasPermission(user.role, permission))) {
       throw new AppException(
         403,
         'FORBIDDEN_PERMISSION',

@@ -194,7 +194,7 @@ As variáveis estão documentadas no [`.env.example`](.env.example), com os mesm
 | Variável | Para quê |
 |---|---|
 | `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` | Superusuário e banco do PostgreSQL |
-| `<SERVIÇO>_DB_PASSWORD` | Senha do usuário de cada schema (aplicada na criação do volume) |
+| `<SERVIÇO>_DB_PASSWORD` | Senha do usuário de cada schema (aplicada na criação do volume ou ao reaplicar o script; veja [Banco de dados](#banco-de-dados)) |
 | `RABBITMQ_USER`, `RABBITMQ_PASSWORD` | Credenciais do broker |
 | `INTERNAL_API_TOKEN` | Token das rotas `/internal/*` entre serviços |
 | `LOG_LEVEL` | Nível dos logs JSON |
@@ -217,7 +217,30 @@ Uma instância PostgreSQL 16 com **um schema e um usuário por serviço**. Cada 
 | `engagement` | `engagement_app` | engagement |
 | `notification` | `notification_app` | notification |
 
-Os schemas e usuários são criados por [`database/init/01-init.sh`](database/init/01-init.sh) na **primeira** inicialização do volume `pgdata`. Para recriá-los (por exemplo, depois de mudar uma senha), use `docker compose down -v`, que apaga os dados.
+Os schemas e usuários são criados por [`database/init/01-init.sh`](database/init/01-init.sh) na **primeira** inicialização do volume `pgdata`. O script é idempotente: num volume que já existe, ele recria o que faltar e reaplica as senhas, sem apagar dados (por exemplo, depois de mudar uma senha no `.env` ou ao atualizar o repositório):
+
+```bash
+docker compose up -d postgres                                        # aplica o .env ao contêiner
+docker compose exec postgres sh /docker-entrypoint-initdb.d/01-init.sh
+docker compose up -d                                                 # serviços com as novas senhas
+```
+
+Para começar do zero, `docker compose down -v` apaga os volumes (e os dados).
+
+**Banco de sombra do Prisma.** O `prisma migrate dev` testa as migrações num banco descartável (*shadow database*). Para que os usuários dos serviços não precisem de `CREATEDB`, o script também cria o banco `pulso_shadow`, com um schema por serviço, de propriedade do usuário do serviço. Lá cada usuário só pode conectar e criar schemas (o Prisma apaga e recria o próprio schema a cada execução); continua sem acesso aos schemas dos outros serviços. A URL segue o padrão `postgresql://<serviço>_app:<senha>@localhost:5432/pulso_shadow?schema=<serviço>`. O `scripts/dev-backend.mjs` já define `SHADOW_DATABASE_URL` para cada serviço, e o `shadowDatabaseUrl` dos `schema.prisma` entra na Fase 2. Para rodar o Prisma à mão:
+
+```bash
+DATABASE_URL='postgresql://identity_app:identity_dev_password@localhost:5432/pulso?schema=identity' \
+SHADOW_DATABASE_URL='postgresql://identity_app:identity_dev_password@localhost:5432/pulso_shadow?schema=identity' \
+npm run db:migrate:dev -w @pulso/identity-service -- --name nome-da-migracao
+```
+
+No banco `pulso` os usuários dos serviços não podem criar schemas. Por isso **não use `prisma migrate reset`** (nem aceite o reset que o `migrate dev` oferece quando encontra divergência): o Prisma apagaria o schema e não conseguiria recriá-lo. Para zerar um serviço, apague o schema como superusuário e reaplique o script (que também recupera um schema apagado por engano):
+
+```bash
+docker compose exec postgres psql -U pulso -d pulso -c 'DROP SCHEMA identity CASCADE'
+docker compose exec postgres sh /docker-entrypoint-initdb.d/01-init.sh
+```
 
 **Migrações e dados de exemplo** (seed fictício e determinístico) chegam na **Fase 2**. O modelo de dados planejado está em [docs/16, item 5](docs/16-plano-de-implementacao.md#5-modelo-do-banco-por-schema) e [docs/07](docs/07-banco-de-dados.md).
 

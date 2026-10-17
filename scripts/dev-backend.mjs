@@ -50,6 +50,8 @@ const { SERVICES, SERVICE_NAMES, GATEWAY_DEFAULT_PORT, API_PREFIX } = loadContra
 const infra = {
   postgresPort: env('POSTGRES_PORT', '5432'),
   database: env('POSTGRES_DB', 'pulso'),
+  // Banco de sombra do "prisma migrate dev", criado por database/init/01-init.sh.
+  shadowDatabase: 'pulso_shadow',
   rabbitPort: env('RABBITMQ_PORT', '5672'),
   rabbitUser: env('RABBITMQ_USER', 'pulso'),
   rabbitPassword: env('RABBITMQ_PASSWORD', 'pulso_dev'),
@@ -65,13 +67,16 @@ const sharedEnv = {
 
 function serviceProcess(name) {
   const password = env(`${name.toUpperCase()}_DB_PASSWORD`, `${name}_dev_password`);
+  const postgresUrl = (database) =>
+    `postgresql://${name}_app:${password}@localhost:${infra.postgresPort}/${database}?schema=${name}`;
   return {
     name,
     dir: `backend/services/${name}`,
     env: {
       ...sharedEnv,
       PORT: String(SERVICES[name].defaultPort),
-      DATABASE_URL: `postgresql://${name}_app:${password}@localhost:${infra.postgresPort}/${infra.database}?schema=${name}`,
+      DATABASE_URL: postgresUrl(infra.database),
+      SHADOW_DATABASE_URL: postgresUrl(infra.shadowDatabase),
       RABBITMQ_URL: `amqp://${infra.rabbitUser}:${infra.rabbitPassword}@localhost:${infra.rabbitPort}`,
     },
   };

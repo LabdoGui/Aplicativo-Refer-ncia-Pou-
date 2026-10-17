@@ -1,0 +1,25 @@
+# Fim de linha LF em todos os arquivos de texto, inclusive em checkouts no Windows
+# com core.autocrlf=true. Com CRLF, os scripts executados nos contêineres Linux
+# quebram (o shebang vira "/bin/sh\r"); o .editorconfig só vale para os editores.
+* text=auto eol=lf
+
+# Tipos que precisam de LF, declarados explicitamente.
+*.sh text eol=lf
+*Dockerfile text eol=lf
+*.conf text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.mjs text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+
+# Binários: nunca converter.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.ico binary
+*.pdf binary
+*.woff binary
+*.woff2 binary

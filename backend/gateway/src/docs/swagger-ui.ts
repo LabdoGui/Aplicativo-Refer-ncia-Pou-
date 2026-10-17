@@ -15,7 +15,9 @@ window.ui = SwaggerUIBundle({
   url: '${DOCS_ROUTES.json}',
   dom_id: '#swagger-ui',
   deepLinking: true,
-  persistAuthorization: true,
+  // O token informado em "Authorize" fica só na memória da página, nunca no localStorage
+  // (a página está na mesma origem do frontend).
+  persistAuthorization: false,
   displayRequestDuration: true,
   docExpansion: 'none',
   filter: true,

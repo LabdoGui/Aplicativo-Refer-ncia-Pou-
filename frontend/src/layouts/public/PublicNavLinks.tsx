@@ -6,27 +6,26 @@ const LINK_CLASS =
 
 interface PublicNavLinksProps {
   vertical?: boolean;
-  onNavigate?: () => void;
 }
 
 /** Links da navegação pública (cabeçalho e menu do celular). */
-export function PublicNavLinks({ vertical = false, onNavigate }: PublicNavLinksProps) {
+export function PublicNavLinks({ vertical = false }: PublicNavLinksProps) {
   const itemClass = cn(LINK_CLASS, vertical ? 'flex w-full' : 'inline-flex');
   return (
     <ul className={vertical ? 'flex flex-col gap-1' : 'flex items-center gap-1'}>
       <li>
         {/* Âncora da landing: Link simples, pois não representa uma página "atual". */}
-        <Link to="/#como-funciona" className={itemClass} onClick={onNavigate}>
+        <Link to="/#como-funciona" className={itemClass}>
           Como funciona
         </Link>
       </li>
       <li>
-        <NavLink to="/privacidade" className={itemClass} onClick={onNavigate}>
+        <NavLink to="/privacidade" className={itemClass}>
           Privacidade
         </NavLink>
       </li>
       <li>
-        <NavLink to="/status" className={itemClass} onClick={onNavigate}>
+        <NavLink to="/status" className={itemClass}>
           Status do sistema
         </NavLink>
       </li>
