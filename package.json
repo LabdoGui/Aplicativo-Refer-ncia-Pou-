@@ -28,7 +28,10 @@
     "dev:backend": "node scripts/dev-backend.mjs",
     "docker:up": "docker compose up --build",
     "docker:down": "docker compose down",
-    "docker:reset": "docker compose down -v"
+    "docker:reset": "docker compose down -v",
+    "e2e": "node scripts/e2e-journey.mjs",
+    "authz": "node scripts/authz-matrix.mjs",
+    "test:load": "node scripts/load-test.mjs"
   },
   "devDependencies": {
     "@nestjs/cli": "^11.0.24",

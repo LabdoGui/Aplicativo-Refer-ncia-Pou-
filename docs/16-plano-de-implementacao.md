@@ -276,13 +276,13 @@ sequenceDiagram
 
 ### Backlog de segurança (Fase 13)
 
-Limitações conhecidas e aceitas por enquanto, registradas para não se perderem:
+Limitações registradas na Fase 1 e como ficaram:
 
 | Item | Situação atual | O que fazer |
 |---|---|---|
 | Usuários do RabbitMQ por serviço | Os 6 serviços conectam como o administrador do broker (`RABBITMQ_USER`, permissão `.* .* .*` no vhost `/`). Qualquer serviço pode publicar qualquer evento (ex.: o notification forjar `clinical.donation.completed`, que vira pontos no engagement), consumir ou apagar filas de outros e remover exchanges, contrariando o menor privilégio do [doc 10](10-seguranca-lgpd.md) | Um usuário por serviço, criado por um `definitions.json` carregado pelo contêiner do RabbitMQ (ou script de init): `write` só em `pulso.events` (e nas próprias filas), com *topic permissions* que limitam a publicação às routing keys iniciadas por `<serviço>.`; `configure` só nas próprias filas; `read` nas próprias filas e em `pulso.events` (exigido pelo bind). O administrador fica só para a interface de gestão |
-| Rate limit em memória | Janela fixa em memória no gateway (`FixedWindowRateLimiter`): zera a cada reinício e não é compartilhada entre réplicas | Com mais de uma réplica do gateway, mover os contadores para um armazenamento comum (ex.: Redis); revisar os limites das rotas de autenticação no teste de carga |
-| Volume das chaves do identity | O par de chaves RSA do JWT (item 7) ainda não tem volume no `docker-compose.yml`: sem ele, recriar o contêiner troca a chave e derruba todas as sessões | Fase 2: volume nomeado só do identity, fora da imagem e do repositório. O diretório precisa existir na imagem com dono `node` (o processo roda sem root, e um volume novo herda o dono do diretório). Em produção, chave por segredo/variável de ambiente e rotação com dois `kid` no JWKS |
+| Rate limit em memória | Mantido: janela fixa em memória no gateway (`FixedWindowRateLimiter`), suficiente para uma réplica. Verificado no teste de carga (`scripts/load-test.mjs`), que conta as respostas 429 à parte | Com mais de uma réplica do gateway, mover os contadores para um armazenamento comum (ex.: Redis) |
+| Volume das chaves do identity | **Resolvido na Fase 2.** Volume nomeado `identity-keys` montado em `/var/lib/pulso/identity-keys` (pasta criada na imagem com dono `node` e permissão 700; chave privada com 600). Recriar o contêiner não derruba as sessões | Em produção, chave por segredo (`JWT_PRIVATE_KEY`, já suportada) e rotação com dois `kid` no JWKS |
 
 ---
 
@@ -300,3 +300,6 @@ Limitações conhecidas e aceitas por enquanto, registradas para não se perdere
 | D8 | Cadastro só para **maiores de 18** | Fluxo com responsável legal | Sim |
 | D9 | **Horas complementares** validadas pelo ADMIN em nome da instituição parceira (fictícia) | Perfil próprio para a instituição | Sim (V2) |
 | D10 | **Colaborador**: só agenda e check-in. **Enfermeiro**: triagem e doação | Permissões iguais | Sim |
+| D11 | **Check-in antecipado só em demonstração** (`DEMO_EARLY_CHECK_IN=true` no `docker-compose.yml`, `false` no código): a jornada completa (agendar → atender → doar) cabe numa sessão, mesmo à noite ou no fim de semana | Afrouxar a regra "check-in só no dia" para todos | Sim (variável de ambiente) |
+| D12 | **Pré-triagem com três resultados informativos** (pode seguir, converse com a unidade, aguarde a data informativa — RN07), sem "inapto"; a única data calculada usa o intervalo configurável (D7) sobre a última doação autodeclarada | Resultado binário apto/inapto | Sim (regras em tabela) |
+| D13 | **Estoque não recebe a doação automaticamente** (RN10): a bolsa passa por processamento; a entrada é uma movimentação "coleta processada e liberada" | Entrada automática a cada doação | Sim (consumidor de evento) |

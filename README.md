@@ -48,26 +48,24 @@ O projeto se alinha ao **Objetivo de Desenvolvimento Sustentável 3** da ONU: as
 
 ## Status do desenvolvimento
 
-O desenvolvimento segue as 14 fases do [plano de implementação](docs/16-plano-de-implementacao.md#8-roadmap-de-implementação). Cada fase tem um critério de pronto verificável.
+O desenvolvimento seguiu as 14 fases do [plano de implementação](docs/16-plano-de-implementacao.md#8-roadmap-de-implementação), cada uma com critério de pronto verificável.
 
-| Fase | Entrega | Status |
+| Fase | Entrega | Como verificar |
 |---|---|---|
-| 1 | Arquitetura e estrutura: monorepo, bibliotecas comuns, 6 serviços e gateway com health e Swagger, frontend com layouts e página de status, Docker Compose e CI | **Concluída** |
-| 2 | Banco (Prisma e migrações de todos os schemas), autenticação (cadastro, login, refresh, RBAC), outbox e eventos | Planejada |
-| 3 | Cadastro, perfil, consentimento e privacidade | Planejada |
-| 4 | Pré-triagem em 6 etapas com regras no back-end | Planejada |
-| 5 | Unidades, grade, disponibilidade, agendamento, cancelamento e reagendamento | Planejada |
-| 6 | Área da equipe: agenda do dia, check-in e triagem configurável | Planejada |
-| 7 | Registro da doação e eventos | Planejada |
-| 8 | Gamificação e horas complementares | Planejada |
-| 9 | Comprovante em PDF e verificação pública | Planejada |
-| 10 | Dashboard administrativo e relatórios com filtros | Planejada |
-| 11 | Estoque ("Banco de Sangue") e movimentações | Planejada |
-| 12 | Central de notificações | Planejada |
-| 13 | Segurança e testes (E2E da jornada, autorização, carga) | Planejada |
-| 14 | Polimento visual e acessibilidade | Planejada |
-
-Nesta fase os serviços ainda não têm regras de negócio: eles sobem, conectam ao banco e ao broker, expõem `/health` e a documentação Swagger.
+| 1 | Arquitetura: monorepo, bibliotecas comuns, 6 serviços e gateway, Docker Compose e CI | `npm run smoke` |
+| 2 | Banco (Prisma, migrações dos 6 schemas), autenticação (JWT RS256, refresh rotativo, RBAC), outbox e eventos | testes do identity e da mensageria |
+| 3 | Cadastro (18+), perfil, consentimentos, exportação e exclusão da conta | telas Perfil e Privacidade |
+| 4 | Pré-triagem em 6 etapas com regras configuráveis no back-end (informativa) | tela Pré-triagem |
+| 5 | Unidades, grade, disponibilidade, agendamento, cancelamento e reagendamento | teste de concorrência do scheduling |
+| 6 | Área da equipe: agenda do dia, check-in, triagem configurável | área `/equipe` |
+| 7 | Registro da doação e eventos | jornada E2E, passos 11 a 13 |
+| 8 | Pontos, níveis, conquistas, ranking opt-in e horas complementares | tela Conquistas |
+| 9 | Declarações em PDF e verificação pública | `/verificar/<código>` |
+| 10 | Dashboard e relatórios com filtros (composição no gateway) | `/admin` e `/admin/relatorios` |
+| 11 | Banco de Sangue: estoque, movimentações, tendência e histórico | `/admin/estoque` |
+| 12 | Central de notificações alimentada por eventos | sino de notificações |
+| 13 | Segurança e testes: jornada E2E, matriz de autorização, carga, usuários do broker por serviço | `npm run e2e`, `npm run authz`, `npm run test:load` |
+| 14 | Polimento visual, responsividade e acessibilidade | revisão com Playwright |
 
 ## Arquitetura
 
@@ -115,7 +113,7 @@ Por que 6 serviços e não 11, como os eventos fluem e as decisões tomadas: [do
 | Segurança | `jose` (JWT RS256 + JWKS), Argon2id (`@node-rs/argon2`), helmet, AES-256-GCM para campos sensíveis |
 | Observabilidade | Logs JSON com `nestjs-pino` e `x-request-id` de ponta a ponta |
 | Documentação | `@nestjs/swagger` (OpenAPI) em cada serviço, unificada no gateway |
-| Testes | Jest + ts-jest; smoke test do ambiente (`scripts/smoke.mjs`) |
+| Testes | Jest + ts-jest (unitários), jornada E2E dos 22 passos, matriz de autorização e teste de carga (scripts Node sem dependências), Playwright na revisão visual |
 | Infraestrutura | Docker, Docker Compose, nginx, GitHub Actions |
 
 ## Requisitos
@@ -150,6 +148,21 @@ npm run smoke          # ou: node scripts/smoke.mjs
 ```
 
 O smoke test só usa o Node 22 (sem dependências) e espera até 120 s o ambiente ficar pronto (`--timeout=180` para mudar; `BASE_URL` para outro endereço).
+
+Na primeira subida, cada serviço aplica as próprias migrações e grava os **dados fictícios de demonstração** (unidades, horários, agendamentos de hoje e dos próximos dias, um ano de doações, estoque com 90 dias de movimentações, conquistas e notificações).
+
+### Testes de ponta a ponta
+
+Com o ambiente no ar:
+
+```bash
+npm run e2e          # os 22 passos do critério de aceite, pela API real
+npm run authz        # matriz de autorização: 5 perfis × rotas de todos os serviços, IDOR e token adulterado
+npm run test:load    # carga leve: latência p50/p95/p99 e erros (veja o aviso sobre o rate limit no script)
+node backend/services/scheduling/test/concurrency.e2e.mjs   # reservas simultâneas: nunca passa da capacidade
+```
+
+A jornada E2E cadastra um doador, responde a pré-triagem, agenda, entra como enfermeiro, faz check-in, triagem e doação, confere pontos, conquista, notificação e PDF (com verificação pública) e termina no dashboard, no estoque (entrada e saída), nos gráficos e no histórico.
 
 Comandos úteis:
 
@@ -195,7 +208,12 @@ As variáveis estão documentadas no [`.env.example`](.env.example), com os mesm
 |---|---|
 | `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` | Superusuário e banco do PostgreSQL |
 | `<SERVIÇO>_DB_PASSWORD` | Senha do usuário de cada schema (aplicada na criação do volume ou ao reaplicar o script; veja [Banco de dados](#banco-de-dados)) |
-| `RABBITMQ_USER`, `RABBITMQ_PASSWORD` | Credenciais do broker |
+| `RABBITMQ_USER`, `RABBITMQ_PASSWORD` | Administrador do broker (só para o painel de gestão) |
+| `RABBITMQ_<SERVIÇO>_PASSWORD` | Senha do usuário de cada serviço no broker (permissões mínimas) |
+| `IDENTITY_FIELD_ENCRYPTION_KEY`, `CLINICAL_FIELD_ENCRYPTION_KEY` | Chaves AES-256 dos campos cifrados (telefone; respostas e valores de saúde) |
+| `COOKIE_SECURE` | Flag `Secure` do cookie de sessão (`true` em produção com HTTPS) |
+| `RUN_MIGRATIONS`, `SEED_DEMO_DATA` | Migrações no boot e dados fictícios de demonstração |
+| `DEMO_EARLY_CHECK_IN` | Só para demonstração: check-in de agendamentos de dias futuros (jornada completa numa sessão) |
 | `INTERNAL_API_TOKEN` | Token das rotas `/internal/*` entre serviços |
 | `LOG_LEVEL` | Nível dos logs JSON |
 | `CORS_ORIGINS`, `RATE_LIMIT_*` | Políticas de borda do gateway |
@@ -227,7 +245,7 @@ docker compose up -d                                                 # serviços
 
 Para começar do zero, `docker compose down -v` apaga os volumes (e os dados).
 
-**Banco de sombra do Prisma.** O `prisma migrate dev` testa as migrações num banco descartável (*shadow database*). Para que os usuários dos serviços não precisem de `CREATEDB`, o script também cria o banco `pulso_shadow`, com um schema por serviço, de propriedade do usuário do serviço. Lá cada usuário só pode conectar e criar schemas (o Prisma apaga e recria o próprio schema a cada execução); continua sem acesso aos schemas dos outros serviços. A URL segue o padrão `postgresql://<serviço>_app:<senha>@localhost:5432/pulso_shadow?schema=<serviço>`. O `scripts/dev-backend.mjs` já define `SHADOW_DATABASE_URL` para cada serviço, e o `shadowDatabaseUrl` dos `schema.prisma` entra na Fase 2. Para rodar o Prisma à mão:
+**Banco de sombra do Prisma.** O `prisma migrate dev` testa as migrações num banco descartável (*shadow database*). Para que os usuários dos serviços não precisem de `CREATEDB`, o script também cria o banco `pulso_shadow`, com um schema por serviço, de propriedade do usuário do serviço. Lá cada usuário só pode conectar e criar schemas (o Prisma apaga e recria o próprio schema a cada execução); continua sem acesso aos schemas dos outros serviços. A URL segue o padrão `postgresql://<serviço>_app:<senha>@localhost:5432/pulso_shadow?schema=<serviço>`. O `scripts/dev-backend.mjs` já define `SHADOW_DATABASE_URL` para cada serviço, usada pelo `shadowDatabaseUrl` dos `schema.prisma`. Para rodar o Prisma à mão:
 
 ```bash
 DATABASE_URL='postgresql://identity_app:identity_dev_password@localhost:5432/pulso?schema=identity' \
@@ -242,19 +260,26 @@ docker compose exec postgres psql -U pulso -d pulso -c 'DROP SCHEMA identity CAS
 docker compose exec postgres sh /docker-entrypoint-initdb.d/01-init.sh
 ```
 
-**Migrações e dados de exemplo** (seed fictício e determinístico) chegam na **Fase 2**. O modelo de dados planejado está em [docs/16, item 5](docs/16-plano-de-implementacao.md#5-modelo-do-banco-por-schema) e [docs/07](docs/07-banco-de-dados.md).
+**Migrações.** Cada serviço tem as suas em `backend/services/<serviço>/prisma/migrations` e as aplica no boot (`RUN_MIGRATIONS=true`, com `prisma migrate deploy`). Restrições que o Prisma não expressa (CHECKs e o índice único parcial "um agendamento ativo por doador") estão em SQL na migração inicial; ao gerar uma migração nova no scheduling, apague qualquer `DROP INDEX "appointments_one_active_per_donor"` que o Prisma proponha.
+
+**Dados de demonstração.** Com `SEED_DEMO_DATA=true`, cada serviço grava a sua parte de um conjunto **fictício e determinístico** (`backend/libs/common/src/seed/dataset.ts`, mesmos IDs em todos os schemas) quando as suas tabelas estão vazias. As datas são relativas ao dia da subida, então o painel sempre tem histórico recente e a agenda de hoje tem atendimentos. Para gerar tudo de novo: `docker compose down -v && docker compose up -d`.
+
+O modelo de dados está em [docs/16, item 5](docs/16-plano-de-implementacao.md#5-modelo-do-banco-por-schema) e em cada `prisma/schema.prisma`.
 
 ## Contas de demonstração
 
-Disponíveis a partir das Fases 2 e 3, quando entram a autenticação e o seed:
+Todas as contas são **fictícias** e usam a mesma senha: **`Pulso@2026`**. A tela de login tem um atalho que preenche cada uma.
 
-| Perfil | E-mail |
-|---|---|
-| Administrador | `admin@demo.com` |
-| Enfermeiro | `enfermeiro@demo.com` |
-| Doador | `doador@demo.com` |
+| Perfil | E-mail | O que dá para fazer |
+|---|---|---|
+| Doador | `doador@demo.com` | Pré-triagem, agendar, histórico (já tem uma doação), conquistas, horas complementares, documentos e notificações |
+| Enfermeiro | `enfermeiro@demo.com` | Agenda do dia das unidades Centro e Campus, check-in, triagem e registro da doação |
+| Colaborador | `colaborador@demo.com` | Agenda do dia da unidade Centro e check-in (sem dados clínicos) |
+| Administrador | `admin@demo.com` | Dashboard, relatórios, Banco de Sangue, unidades e grade, campanhas, usuários, gamificação, configurações e auditoria |
 
-A senha será documentada aqui quando o seed existir. São contas fictícias, apenas para demonstração.
+Também há 70 doadores fictícios (`…@exemplo.test`, mesma senha) com histórico, para o painel e o ranking terem dados.
+
+**Jornada completa pelo navegador** (os 22 passos): crie uma conta em *Quero doar*, responda a pré-triagem e agende; saia e entre como `enfermeiro@demo.com`, escolha a data do agendamento na agenda, faça o check-in e abra o atendimento para a triagem e a doação; volte como doador para ver a doação, os pontos, a conquista e gerar a declaração; por fim, entre como `admin@demo.com` para o dashboard e o Banco de Sangue. No ambiente de demonstração o check-in de dias futuros fica liberado (`DEMO_EARLY_CHECK_IN=true`); em uso real ele vale só no dia do agendamento.
 
 ## Documentação da API
 
@@ -284,10 +309,10 @@ O desenho completo da API está em [docs/09](docs/09-api.md) e [docs/16, item 4]
 │     ├─ contracts/          @pulso/contracts: tipos, enums, papéis e eventos (front e back)
 │     └─ common/             @pulso/common: bootstrap, configuração, logs, auth, erros, saúde, mensageria
 ├─ database/init/            criação de schemas e usuários por serviço
-├─ docker/                   service.Dockerfile (imagem única dos processos Nest), frontend.Dockerfile, nginx.conf
-├─ scripts/                  smoke.mjs (smoke test) e dev-backend.mjs (back-end local)
+├─ docker/                   service.Dockerfile (imagem única dos processos Nest), frontend.Dockerfile, nginx.conf, rabbitmq/
+├─ scripts/                  smoke, jornada E2E, matriz de autorização, carga e back-end local
 ├─ docs/                     documentação acadêmica e técnica
-├─ .github/workflows/ci.yml  build, testes, imagens Docker e smoke test
+├─ .github/workflows/ci.yml  build, testes, imagens Docker, smoke, jornada E2E e autorização
 ├─ docker-compose.yml
 └─ package.json              npm workspaces
 ```
@@ -296,9 +321,10 @@ O desenho completo da API está em [docs/09](docs/09-api.md) e [docs/16, item 4]
 
 - **Nenhum dado real** é usado: doadores, triagens, doações, estoques e instituições são **fictícios**. Não cadastre dados pessoais verdadeiros no ambiente de demonstração.
 - A **pré-triagem é informativa**: orienta, mas nunca libera nem bloqueia a doação. A decisão é sempre da equipe de saúde do hemocentro.
-- A **triagem presencial** e o **estoque** são **simulação acadêmica**. Pelo desenho, as regras clínicas ficarão em tabelas configuráveis, marcadas como pendentes de validação por profissional de saúde (nenhuma regra médica é inventada pelo sistema).
+- A **triagem presencial** e o **estoque** são **simulação acadêmica**. As perguntas e regras da pré-triagem e o intervalo entre doações ficam em tabelas configuráveis, marcados como **pendentes de validação por profissional de saúde**; a triagem profissional não tem limiares automáticos (o resultado é sempre decisão do enfermeiro).
 - O comprovante gerado é **acadêmico e verificável**; não é o atestado oficial de doação.
-- Pelo desenho, os dados de saúde ficam concentrados no serviço `clinical`, com campos sensíveis cifrados, consentimento por finalidade e auditoria de acesso (implementados a partir das Fases 2 a 4). Detalhes em [docs/10](docs/10-seguranca-lgpd.md).
+- Os dados de saúde ficam concentrados no serviço `clinical`, com respostas e valores **cifrados** (AES-256-GCM), nunca em eventos, logs ou auditoria. O doador não vê o resultado nem os valores da triagem profissional; as notificações nunca citam dados clínicos.
+- Consentimento por finalidade (termos obrigatórios; comunicações opcional), compartilhamento da pré-triagem decidido a cada envio e revogável, cópia dos dados em JSON e exclusão da conta (anonimização). Acessos e ações administrativas ficam na trilha de auditoria. Detalhes em [docs/10](docs/10-seguranca-lgpd.md).
 - Os segredos do `.env.example` e do `docker-compose.yml` são públicos e servem só para desenvolvimento.
 
 ## Documentação do projeto

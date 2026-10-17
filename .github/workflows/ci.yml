@@ -40,7 +40,7 @@ jobs:
         run: npm test
 
   docker:
-    name: Imagens Docker e smoke test
+    name: Imagens Docker, smoke test e jornada E2E
     # Em pull requests, em push na main e na execução manual. É a única etapa que
     # sobe os processos de verdade (módulos Nest, banco, broker e nginx), então erros
     # de configuração e inicialização aparecem antes do merge. Pushes em outros
@@ -56,7 +56,7 @@ jobs:
       - name: Baixar o código
         uses: actions/checkout@v4
 
-      - name: Instalar o Node.js 22 (para o smoke test)
+      - name: Instalar o Node.js 22 (smoke test e jornada E2E)
         uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
@@ -72,6 +72,15 @@ jobs:
 
       - name: Smoke test pelo nginx
         run: node scripts/smoke.mjs --timeout=120
+
+      # Os 22 passos do critério de aceite pela API real (cadastro → agendamento →
+      # atendimento → doação → pontos → documento → dashboard e estoque).
+      - name: Jornada E2E (22 passos)
+        run: node scripts/e2e-journey.mjs
+
+      # Cada papel contra as rotas de todos os serviços, IDOR e token adulterado.
+      - name: Matriz de autorização
+        run: node scripts/authz-matrix.mjs
 
       - name: Estado e logs dos contêineres (em caso de falha)
         if: failure()
