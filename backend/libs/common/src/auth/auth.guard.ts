@@ -92,6 +92,8 @@ export class AuthGuard implements CanActivate {
       throw new AppException(401, 'AUTH_REQUIRED', 'Entre na sua conta para continuar.');
     }
 
+    // Sem a query string: buscas por nome ou e-mail não vão para os logs.
+    const path = request.originalUrl?.split('?')[0];
     let user: AuthUser;
     try {
       user = await this.verifier.verify(token);
@@ -100,7 +102,7 @@ export class AuthGuard implements CanActivate {
         // Rota pública: segue como anônimo, mas a indisponibilidade não passa em silêncio.
         if (classifyVerificationError(error) === 'unavailable') {
           this.logger.warn(
-            { err: error, requestId: request.id, path: request.originalUrl },
+            { err: error, requestId: request.id, path },
             'Token não validado (chaves indisponíveis); seguindo como anônimo em rota pública',
           );
         }
@@ -108,7 +110,7 @@ export class AuthGuard implements CanActivate {
       }
       throw tokenVerificationException(error, this.logger, {
         requestId: request.id,
-        path: request.originalUrl,
+        path,
       });
     }
     request.user = user;

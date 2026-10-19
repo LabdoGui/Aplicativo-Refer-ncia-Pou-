@@ -1,5 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
+import { setTimeout as sleep } from 'node:timers/promises';
 import {
   ageOn,
   APP_CONFIG,
@@ -27,12 +28,28 @@ import { hashRefreshToken, TokenService } from './token.service';
 /** Tentativas de senha erradas antes do bloqueio temporário da conta. */
 export const MAX_FAILED_LOGINS = 5;
 export const LOCK_MINUTES = 15;
+/** Novas tentativas de reserva quando o limite está tomado por conferências em andamento. */
+export const RESERVE_RETRIES = 3;
+export const RESERVE_RETRY_MS = 150;
+/** Reserva mais antiga que isso nunca foi concluída (a conferência leva menos de 1 s). */
+export const UNSETTLED_ATTEMPT_SECONDS = 60;
 /** Reuso de um refresh token dentro deste prazo é tratado como corrida entre abas, não ataque. */
 export const REFRESH_REUSE_GRACE_MS = 10_000;
 
 export interface IssuedSession {
   session: AuthSession;
   refreshToken: string;
+}
+
+function lockedException(remainingMs: number): AppException {
+  const minutes = Math.max(1, Math.ceil(remainingMs / 60_000));
+  return new AppException(
+    429,
+    'ACCOUNT_LOCKED',
+    remainingMs > 0
+      ? `Muitas tentativas com senha incorreta. Tente novamente em ${minutes} minuto(s).`
+      : 'Muitas tentativas ao mesmo tempo. Aguarde alguns instantes e tente novamente.',
+  );
 }
 
 interface ClientContext {
@@ -277,15 +294,49 @@ export class AuthService {
    * exclusão da conta). Numa única instrução, só incrementa se a conta não está
    * bloqueada e se ainda há tentativas: requisições simultâneas também param no
    * limite, em vez de cada uma conferir a senha com uma leitura antiga.
+   *
+   * Sem tentativas livres e sem bloqueio, o limite está tomado por conferências
+   * em andamento: espera um pouco e tenta de novo (logins simultâneos com a senha
+   * certa liberam a vaga em instantes). Se a última reserva é antiga, ela nunca
+   * foi concluída (queda no meio da conferência) e o contador cheio vira um
+   * bloqueio comum, que expira, em vez de travar a conta para sempre.
    */
   async reservePasswordAttempt(userId: string): Promise<void> {
-    const reserved = await this.prisma.$queryRaw<Array<{ failedLoginAttempts: number }>>`
-      UPDATE "users" SET "failedLoginAttempts" = "failedLoginAttempts" + 1
-       WHERE "id" = ${userId}::uuid
-         AND ("lockedUntil" IS NULL OR "lockedUntil" <= now())
-         AND "failedLoginAttempts" < ${MAX_FAILED_LOGINS}
-       RETURNING "failedLoginAttempts"`;
-    if (reserved.length === 0) throw await this.lockedError(userId);
+    for (let retry = 0; ; retry += 1) {
+      const reserved = await this.prisma.$queryRaw<Array<{ failedLoginAttempts: number }>>`
+        UPDATE "users"
+           SET "failedLoginAttempts" = "failedLoginAttempts" + 1, "passwordAttemptAt" = now()
+         WHERE "id" = ${userId}::uuid
+           AND ("lockedUntil" IS NULL OR "lockedUntil" <= now())
+           AND "failedLoginAttempts" < ${MAX_FAILED_LOGINS}
+         RETURNING "failedLoginAttempts"`;
+      if (reserved.length > 0) return;
+
+      const unsettled = await this.prisma.$queryRaw<Array<{ id: string }>>`
+        UPDATE "users"
+           SET "failedLoginAttempts" = 0, "passwordAttemptAt" = NULL,
+               "lockedUntil" = now() + ${LOCK_MINUTES}::int * interval '1 minute'
+         WHERE "id" = ${userId}::uuid
+           AND ("lockedUntil" IS NULL OR "lockedUntil" <= now())
+           AND "failedLoginAttempts" >= ${MAX_FAILED_LOGINS}
+           AND ("passwordAttemptAt" IS NULL
+                OR "passwordAttemptAt" < now() - ${UNSETTLED_ATTEMPT_SECONDS}::int * interval '1 second')
+         RETURNING "id"`;
+      if (unsettled.length > 0) {
+        await this.audit.record({
+          actor: null,
+          action: 'auth.account_locked',
+          entity: 'user',
+          entityId: userId,
+          metadata: { reason: 'unsettled_attempts' },
+        });
+        throw await this.lockedError(userId);
+      }
+
+      const remainingMs = await this.lockRemainingMs(userId);
+      if (remainingMs > 0 || retry >= RESERVE_RETRIES) throw lockedException(remainingMs);
+      await sleep(RESERVE_RETRY_MS);
+    }
   }
 
   /**
@@ -301,12 +352,12 @@ export class AuthService {
   }
 
   /**
-   * Senha errada (a tentativa já foi contada na reserva): registra a falha na
-   * auditoria e, se o limite foi atingido, bloqueia a conta. Só uma das
-   * tentativas simultâneas bloqueia e registra o bloqueio.
+   * Senha errada (a tentativa já foi contada na reserva): se o limite foi
+   * atingido, bloqueia a conta (antes da auditoria, para uma falha ao gravar o
+   * registro não deixar o contador cheio sem bloqueio) e registra a falha. Só
+   * uma das tentativas simultâneas bloqueia e registra o bloqueio.
    */
   async registerFailedPassword(userId: string, action: string, requestId?: string): Promise<void> {
-    await this.audit.record({ actor: null, action, entity: 'user', entityId: userId, requestId });
     const { count } = await this.prisma.user.updateMany({
       where: {
         id: userId,
@@ -318,6 +369,7 @@ export class AuthService {
         lockedUntil: new Date(Date.now() + LOCK_MINUTES * 60_000),
       },
     });
+    await this.audit.record({ actor: null, action, entity: 'user', entityId: userId, requestId });
     if (count === 0) return;
     await this.audit.record({
       actor: null,
@@ -328,20 +380,16 @@ export class AuthService {
     });
   }
 
-  private async lockedError(userId: string): Promise<AppException> {
+  private async lockRemainingMs(userId: string): Promise<number> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: { lockedUntil: true },
     });
-    const remainingMs = (user?.lockedUntil?.getTime() ?? 0) - Date.now();
-    const minutes = Math.max(1, Math.ceil(remainingMs / 60_000));
-    return new AppException(
-      429,
-      'ACCOUNT_LOCKED',
-      remainingMs > 0
-        ? `Muitas tentativas com senha incorreta. Tente novamente em ${minutes} minuto(s).`
-        : 'Muitas tentativas ao mesmo tempo. Aguarde alguns instantes e tente novamente.',
-    );
+    return (user?.lockedUntil?.getTime() ?? 0) - Date.now();
+  }
+
+  private async lockedError(userId: string): Promise<AppException> {
+    return lockedException(await this.lockRemainingMs(userId));
   }
 
   /** Revoga todas as sessões do usuário, menos (opcionalmente) a família informada. */

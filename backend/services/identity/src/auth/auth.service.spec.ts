@@ -171,12 +171,62 @@ describe('AuthService.login', () => {
     prisma.user.findUnique
       .mockResolvedValueOnce(user)
       .mockResolvedValueOnce({ lockedUntil: new Date(Date.now() + 60_000) });
-    prisma.$queryRaw.mockResolvedValueOnce([]);
+    prisma.$queryRaw.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
     await expectCode(
       service.login({ email: user.email, password: 'qualquer' }, {}),
       'ACCOUNT_LOCKED',
     );
     expect(passwords.verify).not.toHaveBeenCalled();
+  });
+
+  it('limite tomado por conferências em andamento: espera e tenta reservar de novo', async () => {
+    const { service, prisma, tokens } = makeService();
+    prisma.user.findUnique
+      .mockResolvedValueOnce(user)
+      .mockResolvedValueOnce({ lockedUntil: null })
+      .mockResolvedValue({ ...user, failedLoginAttempts: 0 });
+    // 1ª reserva: sem vaga; reserva antiga: não; 2ª reserva: ok.
+    prisma.$queryRaw
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([{ failedLoginAttempts: 1 }]);
+    await service.login({ email: user.email, password: 'certa' }, {});
+    expect(prisma.$queryRaw).toHaveBeenCalledTimes(3);
+    expect(tokens.signAccessToken).toHaveBeenCalled();
+  });
+
+  it('reserva que nunca foi concluída vira bloqueio comum (que expira), auditado', async () => {
+    const { service, prisma, passwords, audit } = makeService();
+    prisma.user.findUnique
+      .mockResolvedValueOnce(user)
+      .mockResolvedValueOnce({ lockedUntil: new Date(Date.now() + 15 * 60_000) });
+    prisma.$queryRaw.mockResolvedValueOnce([]).mockResolvedValueOnce([{ id: user.id }]);
+    await expectCode(service.login({ email: user.email, password: 'certa' }, {}), 'ACCOUNT_LOCKED');
+    const unsettled = prisma.$queryRaw.mock.calls[1][0].join('?');
+    expect(unsettled).toContain('"lockedUntil" = now() +');
+    expect(unsettled).toContain('"passwordAttemptAt" < now()');
+    expect(audit.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'auth.account_locked',
+        metadata: { reason: 'unsettled_attempts' },
+      }),
+    );
+    expect(passwords.verify).not.toHaveBeenCalled();
+  });
+
+  it('bloqueia antes de auditar a falha (erro na auditoria não deixa o contador cheio)', async () => {
+    const { service, prisma, passwords, audit } = makeService();
+    prisma.user.findUnique.mockResolvedValue(user);
+    passwords.verify.mockResolvedValue(false);
+    audit.record.mockRejectedValueOnce(new Error('falha ao gravar'));
+    await expect(service.login({ email: user.email, password: 'errada' }, {})).rejects.toThrow(
+      'falha ao gravar',
+    );
+    expect(prisma.user.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ lockedUntil: expect.any(Date) }),
+      }),
+    );
   });
 
   it('senha certa não abre sessão se outra tentativa bloqueou a conta no meio-tempo', async () => {

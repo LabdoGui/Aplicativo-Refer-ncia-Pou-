@@ -164,7 +164,7 @@ export class UnitsService {
 
   /**
    * Bloqueia um período (RF53): novos agendamentos ficam impedidos e os já
-   * marcados no período são cancelados pela unidade, com aviso ao doador
+   * marcados no período (que ainda não começaram) são cancelados pela unidade, com aviso ao doador
    * (evento scheduling.appointment.cancelled) e a vaga liberada.
    */
   async createBlock(
@@ -198,12 +198,13 @@ export class UnitsService {
       const created = await tx.scheduleBlock.create({
         data: { unitId, startsAt, endsAt, reason: dto.reason, createdById: actor.id },
       });
+      // Só o que ainda vai acontecer: horário que já passou fica para a rotina de
+      // faltas (não é cancelamento da unidade nem gera aviso ao doador).
       const affected = await tx.appointment.findMany({
         where: {
           unitId,
           status: { in: ['BOOKED', 'CONFIRMED'] },
-          startsAt: { lt: endsAt },
-          endsAt: { gt: startsAt },
+          startsAt: { lt: endsAt, gte: new Date(Math.max(startsAt.getTime(), Date.now())) },
         },
         include: { unit: { select: { name: true } } },
       });

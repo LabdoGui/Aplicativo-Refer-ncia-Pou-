@@ -335,6 +335,17 @@ describe('AuthGuard', () => {
       expect(warnLog).toHaveBeenCalledTimes(1);
       expect(errorLog).not.toHaveBeenCalled();
     });
+
+    it('não registra a query string (buscas por nome ou e-mail)', async () => {
+      const { context, request } = createContext('publicRoute', bearer('token-jwks-lento'));
+      Object.assign(request, { originalUrl: '/api/v1/admin/users?search=maria@exemplo.test' });
+
+      await guard.canActivate(context);
+      expect(warnLog).toHaveBeenCalledWith(
+        expect.objectContaining({ path: '/api/v1/admin/users' }),
+        expect.any(String),
+      );
+    });
   });
 
   describe('@InternalOnly', () => {

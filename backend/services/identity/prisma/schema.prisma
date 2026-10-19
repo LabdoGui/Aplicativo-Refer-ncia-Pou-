@@ -52,6 +52,8 @@ model User {
   status              UserStatus @default(ACTIVE)
   failedLoginAttempts Int        @default(0)
   lockedUntil         DateTime?  @db.Timestamptz(3)
+  /// Última reserva de tentativa de senha (detecta reservas que nunca foram concluídas).
+  passwordAttemptAt   DateTime?  @db.Timestamptz(3)
   lastLoginAt         DateTime?  @db.Timestamptz(3)
   createdAt           DateTime   @default(now()) @db.Timestamptz(3)
   updatedAt           DateTime   @updatedAt @db.Timestamptz(3)

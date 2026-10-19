@@ -160,7 +160,11 @@ export function useSubmitPreScreening() {
   return useMutation({
     mutationFn: (data: PreScreeningSubmitRequest) =>
       apiPost<PreScreeningResultView>('/screenings/pre-check', data),
-    onSuccess: (result) => queryClient.setQueryData(donorKeys.preScreening, result),
+    onSuccess: (result) => {
+      queryClient.setQueryData(donorKeys.preScreening, result);
+      // A data informativa também considera a pré-triagem válida (RN04).
+      void queryClient.invalidateQueries({ queryKey: donorKeys.eligibility });
+    },
   });
 }
 

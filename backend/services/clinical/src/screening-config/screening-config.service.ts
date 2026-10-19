@@ -30,10 +30,12 @@ export function nextRevision(version: string): string {
  * antigos continuam apontando para as regras que de fato valeram.
  */
 async function bumpRevision(tx: Prisma.TransactionClient, ruleSetId: string): Promise<string> {
-  const ruleSet = await tx.screeningRuleSet.findUniqueOrThrow({
-    where: { id: ruleSetId },
-    select: { version: true },
-  });
+  // FOR UPDATE: duas edições simultâneas leem uma de cada vez, sem repetir a revisão.
+  const [ruleSet] = await tx.$queryRaw<Array<{ version: string }>>`
+    SELECT "version" FROM "screening_rule_sets" WHERE "id" = ${ruleSetId}::uuid FOR UPDATE`;
+  if (!ruleSet) {
+    throw new AppException(404, 'RULE_SET_NOT_FOUND', 'Nenhum conjunto de regras vigente.');
+  }
   const version = nextRevision(ruleSet.version);
   await tx.screeningRuleSet.update({ where: { id: ruleSetId }, data: { version } });
   return version;

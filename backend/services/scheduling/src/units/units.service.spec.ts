@@ -69,6 +69,20 @@ describe('UnitsService.createBlock (RF53)', () => {
     );
   });
 
+  it('bloqueio que começou mais cedo só cancela o que ainda não começou', async () => {
+    const { service, tx } = setup([]);
+    const before = Date.now();
+    await service.createBlock(admin, 'u1', {
+      startsAt: new Date(before - 3 * 3_600_000).toISOString(),
+      endsAt: new Date(before + 3 * 3_600_000).toISOString(),
+      reason: 'Fechamento antecipado',
+    });
+    const [[{ where }]] = tx.appointment.findMany.mock.calls as unknown as [
+      [{ where: { startsAt: { gte: Date } } }],
+    ];
+    expect(where.startsAt.gte.getTime()).toBeGreaterThanOrEqual(before);
+  });
+
   it('agendamento que mudou de situação no meio do caminho não é contado nem avisado', async () => {
     const { service, outbox } = setup([{ id: 'ap1', slotId: 's1' }], 0);
     const view = await service.createBlock(admin, 'u1', dto);
