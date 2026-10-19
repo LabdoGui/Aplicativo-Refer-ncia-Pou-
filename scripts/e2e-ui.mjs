@@ -98,7 +98,12 @@ console.log(`Jornada E2E pelo navegador em ${BASE_URL}\n`);
 
 // --- Doador ----------------------------------------------------------------
 await check('cadastrar um doador', async () => {
-  await page.goto(`${BASE_URL}/cadastro`);
+  // A página inicial mostra a situação pública dos estoques (sem login).
+  await page.goto(`${BASE_URL}/`);
+  await page.getByText('Como está o estoque de sangue').waitFor();
+  await page.getByText(/Carregando a situação dos estoques/).waitFor({ state: 'hidden' });
+  await page.getByRole('link', { name: 'Quero doar' }).first().click();
+  await page.waitForURL(/\/cadastro/);
   await page.getByLabel('Nome completo').fill(donorName);
   await page.getByLabel('E-mail').fill(email);
   await page.getByLabel('Data de nascimento').fill('1992-05-20');

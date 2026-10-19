@@ -15,7 +15,7 @@ interface AgendaToolbarProps {
 export function AgendaToolbar({ units, unitId, date, onChange }: AgendaToolbarProps) {
   const isToday = date === todayIso();
   return (
-    <div className="flex flex-col gap-4 rounded-card border border-line bg-surface p-4 md:flex-row md:items-end">
+    <div className="flex flex-col gap-4 rounded-card border border-line bg-surface p-4 md:flex-row md:flex-wrap md:items-end">
       {units.length > 1 && (
         <SelectField
           label="Unidade"
@@ -32,7 +32,8 @@ export function AgendaToolbar({ units, unitId, date, onChange }: AgendaToolbarPr
         value={date}
         onChange={(event) => event.target.value && onChange({ date: event.target.value })}
       />
-      <div className="flex flex-wrap gap-2">
+      {/* Os três atalhos andam juntos: se faltar espaço, o grupo inteiro desce de linha. */}
+      <div className="flex flex-wrap gap-2 md:shrink-0 md:flex-nowrap">
         <Button
           variant="outline"
           size="sm"
@@ -52,7 +53,7 @@ export function AgendaToolbar({ units, unitId, date, onChange }: AgendaToolbarPr
           Próximo dia <ChevronRight aria-hidden="true" className="size-4" />
         </Button>
       </div>
-      <p className="text-sm font-semibold text-ink md:ml-auto md:pb-3" aria-live="polite">
+      <p className="text-sm font-semibold text-ink md:basis-full" aria-live="polite">
         {isToday ? 'Hoje, ' : ''}
         {formatLongDate(date)}
       </p>
