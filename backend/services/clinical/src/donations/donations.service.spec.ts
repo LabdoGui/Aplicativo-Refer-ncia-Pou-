@@ -38,6 +38,9 @@ function setup(state: Partial<typeof attendance> = {}) {
         ...data,
       })),
     },
+    preScreening: {
+      findFirst: jest.fn(async (): Promise<{ waitUntil: Date | null } | null> => null),
+    },
     $transaction: jest.fn(),
   };
   prisma.$transaction.mockImplementation(async (fn: (tx: unknown) => unknown) => fn(prisma));
@@ -139,8 +142,29 @@ describe('DonationsService.eligibility', () => {
     const view = await service.eligibility(donor);
     expect(view).toMatchObject({
       nextEligibleAt: '2026-09-29',
+      source: 'DONATION',
       intervalDays: 90,
       validationStatus: 'PENDING_VALIDATION',
+    });
+  });
+
+  it('usa a data da pré-triagem válida quando ela é posterior (doação autodeclarada)', async () => {
+    const { service, prisma } = setup();
+    prisma.preScreening.findFirst.mockResolvedValueOnce({
+      waitUntil: new Date('2027-01-07T00:00:00Z'),
+    });
+    await expect(service.eligibility(donor)).resolves.toMatchObject({
+      nextEligibleAt: '2027-01-07',
+      source: 'PRE_SCREENING',
+    });
+  });
+
+  it('sem doação nem data na pré-triagem, não há data informativa', async () => {
+    const { service, prisma } = setup();
+    prisma.donation.findFirst.mockResolvedValueOnce(null as never);
+    await expect(service.eligibility(donor)).resolves.toMatchObject({
+      nextEligibleAt: null,
+      source: null,
     });
   });
 });

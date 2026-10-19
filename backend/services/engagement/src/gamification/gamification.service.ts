@@ -29,10 +29,16 @@ export class GamificationService {
 
   async profile(donorId: string): Promise<GamificationProfile> {
     const donor = await this.ensureDonor(donorId);
-    const [settings, achievements, unlocked, recentPoints] = await Promise.all([
+    const unlocked = await this.prisma.donorAchievement.findMany({ where: { donorId } });
+    const [settings, achievements, recentPoints] = await Promise.all([
       this.settings.get(),
-      this.prisma.achievement.findMany({ where: { active: true }, orderBy: { order: 'asc' } }),
-      this.prisma.donorAchievement.findMany({ where: { donorId } }),
+      // Conquista desativada some para quem ainda não tinha; quem já tinha continua vendo.
+      this.prisma.achievement.findMany({
+        where: {
+          OR: [{ active: true }, { code: { in: unlocked.map((row) => row.achievementCode) } }],
+        },
+        orderBy: { order: 'asc' },
+      }),
       this.prisma.pointsEntry.findMany({
         where: { donorId },
         orderBy: { createdAt: 'desc' },

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import type { AgendaItem } from '@pulso/contracts';
 import { Badge, Button, buttonStyles, Table, TBody, Td, Th, THead, Tr } from '@/components/ui';
 import { AppointmentStatusBadge } from '@/features/scheduling/AppointmentStatusBadge';
-import { formatTime } from '@/lib/format';
+import { formatTime, todayIso, toIsoDate } from '@/lib/format';
 
 interface AgendaTableProps {
   items: AgendaItem[];
@@ -12,9 +12,18 @@ interface AgendaTableProps {
   pendingId: string | null;
   onCheckIn: (item: AgendaItem) => void;
   onNoShow: (item: AgendaItem) => void;
+  /** Modo demonstração: check-in também em dias futuros. */
+  earlyCheckInAllowed: boolean;
 }
 
 const isOpen = (item: AgendaItem) => item.status === 'BOOKED' || item.status === 'CONFIRMED';
+
+/** Check-in vale no dia do agendamento (ou em dias futuros, no modo demonstração). */
+export function canCheckInOn(startsAt: string, earlyCheckInAllowed: boolean): boolean {
+  const day = toIsoDate(startsAt);
+  const today = todayIso();
+  return day === today || (earlyCheckInAllowed && day > today);
+}
 
 /** Atendimentos do dia em ordem de horário, com as ações da recepção. */
 export function AgendaTable({
@@ -23,6 +32,7 @@ export function AgendaTable({
   pendingId,
   onCheckIn,
   onNoShow,
+  earlyCheckInAllowed,
 }: AgendaTableProps) {
   const now = Date.now();
   return (
@@ -57,7 +67,7 @@ export function AgendaTable({
               </Td>
               <Td>
                 <div className="flex flex-wrap justify-end gap-2">
-                  {isOpen(item) && (
+                  {isOpen(item) && canCheckInOn(item.startsAt, earlyCheckInAllowed) && (
                     <Button
                       size="sm"
                       variant="secondary"

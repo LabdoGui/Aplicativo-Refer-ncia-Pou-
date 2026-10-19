@@ -8,7 +8,12 @@ import {
   todayLocal,
   toLocalDate,
 } from '@pulso/common';
-import type { AgendaResponse, AuthUser, StaffAppointmentView } from '@pulso/contracts';
+import {
+  hasPermission,
+  type AgendaResponse,
+  type AuthUser,
+  type StaffAppointmentView,
+} from '@pulso/contracts';
 import {
   APPOINTMENT_INCLUDE,
   emptyStatusCounts,
@@ -64,7 +69,7 @@ export class AgendaService {
 
   async staffView(user: AuthUser, id: string, requestId?: string): Promise<StaffAppointmentView> {
     const appointment = await this.findInScope(user, id);
-    return this.toStaffView(appointment, requestId);
+    return this.toStaffView(user, appointment, requestId);
   }
 
   /**
@@ -174,14 +179,22 @@ export class AgendaService {
   }
 
   private async toStaffView(
+    user: AuthUser,
     appointment: AppointmentWithRelations,
     requestId?: string,
   ): Promise<StaffAppointmentView> {
-    const donorSummary = await this.donors.summary(appointment.donorId, requestId);
+    const summary = await this.donors.summary(appointment.donorId, requestId);
+    // Tipo sanguíneo autodeclarado é dado de saúde: só para quem faz triagem e
+    // registra a doação (enfermagem), não para o colaborador nem a administração.
+    const donorSummary =
+      summary && !hasPermission(user.role, 'screening:perform')
+        ? { ...summary, declaredBloodType: null }
+        : summary;
     return {
       ...toAgendaItem(appointment, donorSummary),
       unit: { id: appointment.unit.id, name: appointment.unit.name },
       donorSummary,
+      earlyCheckInAllowed: this.config.DEMO_EARLY_CHECK_IN,
     };
   }
 }

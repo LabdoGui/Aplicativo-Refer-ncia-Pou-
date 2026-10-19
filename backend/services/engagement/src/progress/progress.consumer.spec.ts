@@ -64,6 +64,8 @@ describe('ProgressConsumer', () => {
       $transaction: jest.fn(async (fn: (tx: unknown) => Promise<unknown>) => {
         const pending: string[] = [];
         const tx = {
+          // Registro de contas excluídas: nenhuma nos testes.
+          $queryRawUnsafe: jest.fn(async () => []),
           $executeRawUnsafe: jest.fn(async (_sql: string, id: string, handler: string) => {
             const key = `${id}:${handler}`;
             if (processed.has(key) || pending.includes(key)) return 0;

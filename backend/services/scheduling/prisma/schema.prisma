@@ -208,3 +208,11 @@ model ProcessedEvent {
   @@id([eventId, consumer])
   @@map("processed_events")
 }
+
+/// Contas excluídas (identity.user.deleted): bloqueia escritas de tokens ainda válidos.
+model DeletedUser {
+  userId    String   @id @db.Uuid
+  deletedAt DateTime @default(now()) @db.Timestamptz(3)
+
+  @@map("deleted_users")
+}

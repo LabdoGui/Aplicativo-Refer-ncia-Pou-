@@ -69,6 +69,7 @@ export function AttendancePage() {
                 <DonorHeader
                   appointment={appointment.data}
                   canCheckIn={user ? hasPermission(user.role, 'appointment:check-in') : false}
+                  showBloodType={isNurse}
                   checkingIn={checkIn.isPending}
                   onCheckIn={() => checkIn.mutate(appointmentId)}
                 />

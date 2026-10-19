@@ -1,5 +1,5 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
-import { EventConsumer, OutboxService } from '@pulso/common';
+import { deletedAmong, EventConsumer, OutboxService } from '@pulso/common';
 import { EVENTS, type EventEnvelope } from '@pulso/contracts';
 import type { Prisma } from '../../generated/prisma';
 import { describeAwards } from '../rules/engagement-rules';
@@ -28,6 +28,8 @@ export class ProgressConsumer implements OnModuleInit {
   onModuleInit(): void {
     this.consumer.on(EVENTS.ATTENDANCE_COMPLETED, 'attendance-points', async (envelope, tx: Tx) => {
       const { donorId, campaignId } = envelope.data;
+      // Conta excluída antes de o evento chegar: nada de pontos novos para ela.
+      if ((await deletedAmong(tx, [donorId])).size > 0) return;
       const result = await this.progress.recordAttendance(tx, {
         donorId,
         campaignId,
@@ -39,6 +41,7 @@ export class ProgressConsumer implements OnModuleInit {
 
     this.consumer.on(EVENTS.DONATION_COMPLETED, 'donation-progress', async (envelope, tx: Tx) => {
       const { donorId, campaignId, donationId } = envelope.data;
+      if ((await deletedAmong(tx, [donorId])).size > 0) return;
       const result = await this.progress.recordDonation(tx, {
         donorId,
         donationId,

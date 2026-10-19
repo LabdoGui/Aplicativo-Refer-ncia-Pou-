@@ -51,7 +51,9 @@ export function EligibilityCard({ actionWhenAvailable, className }: EligibilityC
           <p className="mt-1 text-sm text-ink">
             {available
               ? 'Pela data informativa, você já pode agendar uma nova doação.'
-              : `Calculada a partir da sua última doação, com intervalo de ${data.intervalDays} dias.`}
+              : data.source === 'PRE_SCREENING'
+                ? 'Indicada pelas respostas da sua pré-triagem, como a data da última doação que você informou.'
+                : `Calculada a partir da sua última doação, com intervalo de ${data.intervalDays} dias.`}
           </p>
           <EligibilityNote pending={data.validationStatus === 'PENDING_VALIDATION'} />
           {available && actionWhenAvailable && <div className="mt-4">{actionWhenAvailable}</div>}

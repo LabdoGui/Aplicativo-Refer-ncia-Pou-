@@ -17,6 +17,8 @@ function setup() {
   // Tabela falsa com a chave única (sourceEventId, userId, type).
   const stored = new Map<string, unknown>();
   const tx = {
+    $queryRawUnsafe: jest.fn(async (): Promise<Array<{ userId: string }>> => []),
+    $executeRawUnsafe: jest.fn(async () => 1),
     notification: {
       deleteMany: jest.fn(async () => ({ count: 3 })),
       createMany: jest.fn(

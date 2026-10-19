@@ -6,6 +6,7 @@ import {
   CoreModule,
   DatabaseHealthIndicator,
   HealthModule,
+  DeletedAccountsModule,
   MessagingModule,
 } from '@pulso/common';
 import { AttendancesModule } from './attendances/attendances.module';
@@ -27,6 +28,7 @@ import { SettingsModule } from './settings/settings.module';
   imports: [
     CoreModule.forRoot({ serviceName: 'clinical-service', envSchema }),
     PrismaModule,
+    DeletedAccountsModule.forRoot(),
     MessagingModule.forRoot(),
     AuditModule.forRoot(),
     HealthModule.forRoot([DatabaseHealthIndicator, BrokerHealthIndicator]),

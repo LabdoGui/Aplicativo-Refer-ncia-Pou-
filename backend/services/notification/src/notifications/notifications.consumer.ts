@@ -1,5 +1,11 @@
 import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
-import { APP_CONFIG, EventConsumer, InternalHttpClient } from '@pulso/common';
+import {
+  APP_CONFIG,
+  deletedAmong,
+  EventConsumer,
+  InternalHttpClient,
+  recordDeletedAccount,
+} from '@pulso/common';
 import { EVENTS, type EventEnvelope, type EventPayloads, type EventType } from '@pulso/contracts';
 import type { Prisma } from '../../generated/prisma';
 import type { NotificationEnv } from '../config';
@@ -76,6 +82,7 @@ export class NotificationsConsumer implements OnModuleInit {
       EVENTS.USER_DELETED,
       'erase-notifications',
       async ({ data }, tx) => {
+        await recordDeletedAccount(tx, data.userId);
         await tx.notification.deleteMany({ where: { userId: data.userId } });
       },
     );
@@ -125,15 +132,21 @@ export class NotificationsConsumer implements OnModuleInit {
   }
 }
 
-/** Grava os rascunhos ignorando os que já existem para o mesmo evento. */
+/**
+ * Grava os rascunhos ignorando os que já existem para o mesmo evento e os de
+ * contas já excluídas (eventos que chegam depois da exclusão).
+ */
 export async function save(
   tx: Tx,
   sourceEventId: string,
   drafts: NotificationDraft[],
 ): Promise<number> {
   if (drafts.length === 0) return 0;
+  const deleted = await deletedAmong(tx, [...new Set(drafts.map((item) => item.userId))]);
+  const kept = drafts.filter((item) => !deleted.has(item.userId));
+  if (kept.length === 0) return 0;
   const { count } = await tx.notification.createMany({
-    data: drafts.map((item) => ({ ...item, sourceEventId })),
+    data: kept.map((item) => ({ ...item, sourceEventId })),
     skipDuplicates: true,
   });
   return count;

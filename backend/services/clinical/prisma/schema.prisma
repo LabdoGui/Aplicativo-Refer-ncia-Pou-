@@ -151,6 +151,8 @@ model PreScreening {
   id                String             @id @default(uuid()) @db.Uuid
   donorId           String             @db.Uuid
   ruleSetId         String             @db.Uuid
+  /// Versão das regras no momento da avaliação (RN08): edições posteriores criam outra revisão.
+  ruleSetVersion    String?
   result            PreScreeningResult
   triggeredRuleIds  String[]           @db.Uuid
   /// Orientações exibidas ao doador, cifradas (revelam informação de saúde).
@@ -310,4 +312,12 @@ model ProcessedEvent {
 
   @@id([eventId, consumer])
   @@map("processed_events")
+}
+
+/// Contas excluídas (identity.user.deleted): bloqueia escritas de tokens ainda válidos.
+model DeletedUser {
+  userId    String   @id @db.Uuid
+  deletedAt DateTime @default(now()) @db.Timestamptz(3)
+
+  @@map("deleted_users")
 }

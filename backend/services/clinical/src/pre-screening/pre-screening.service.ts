@@ -100,6 +100,7 @@ export class PreScreeningService {
         data: {
           donorId: actor.id,
           ruleSetId: ruleSet.id,
+          ruleSetVersion: ruleSet.version,
           result: evaluation.result,
           triggeredRuleIds: evaluation.triggeredRuleIds,
           guidanceEncrypted: this.encryption.encryptJson(evaluation.guidance),
@@ -234,7 +235,7 @@ export class PreScreeningService {
       guidance: this.encryption.decryptJson<PreScreeningGuidance[]>(record.guidanceEncrypted),
       waitUntil: record.waitUntil ? record.waitUntil.toISOString().slice(0, 10) : null,
       sharedWithStaff: record.sharedWithStaff,
-      ruleSetVersion: record.ruleSet.version,
+      ruleSetVersion: record.ruleSetVersion ?? record.ruleSet.version,
       validationStatus: record.ruleSet.validationStatus,
       createdAt: record.createdAt.toISOString(),
       expiresAt: record.expiresAt.toISOString(),

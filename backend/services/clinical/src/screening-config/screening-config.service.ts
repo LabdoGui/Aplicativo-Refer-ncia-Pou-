@@ -18,6 +18,27 @@ import type {
   UpdateRuleDto,
 } from './dto/screening-config.dto';
 
+/** Próxima revisão de uma versão: "2026.1-demo" → "2026.1-demo.r2" → "2026.1-demo.r3". */
+export function nextRevision(version: string): string {
+  const match = /^(.*)\.r(\d+)$/.exec(version);
+  return match ? `${match[1]}.r${Number(match[2]) + 1}` : `${version}.r2`;
+}
+
+/**
+ * RN08: editar o questionário ativo cria uma nova revisão da versão. Cada
+ * pré-triagem guarda a versão com que foi avaliada, então os resultados
+ * antigos continuam apontando para as regras que de fato valeram.
+ */
+async function bumpRevision(tx: Prisma.TransactionClient, ruleSetId: string): Promise<string> {
+  const ruleSet = await tx.screeningRuleSet.findUniqueOrThrow({
+    where: { id: ruleSetId },
+    select: { version: true },
+  });
+  const version = nextRevision(ruleSet.version);
+  await tx.screeningRuleSet.update({ where: { id: ruleSetId }, data: { version } });
+  return version;
+}
+
 @Injectable()
 export class ScreeningConfigService {
   constructor(
@@ -72,13 +93,14 @@ export class ScreeningConfigService {
           ...(dto.active !== undefined ? { active: dto.active } : {}),
         },
       });
+      const version = await bumpRevision(tx, question.ruleSetId);
       await this.audit.record(
         {
           actor,
           action: 'screening_config.question_updated',
           entity: 'screening_question',
           entityId: id,
-          metadata: { code: question.code, fields: Object.keys(dto) },
+          metadata: { code: question.code, fields: Object.keys(dto), version },
           requestId,
         },
         tx,
@@ -104,13 +126,14 @@ export class ScreeningConfigService {
         },
         include: { question: { select: { code: true, text: true } } },
       });
+      const version = await bumpRevision(tx, rule.ruleSetId);
       await this.audit.record(
         {
           actor,
           action: 'screening_config.rule_updated',
           entity: 'screening_rule',
           entityId: id,
-          metadata: { fields: Object.keys(dto) },
+          metadata: { fields: Object.keys(dto), version },
           requestId,
         },
         tx,

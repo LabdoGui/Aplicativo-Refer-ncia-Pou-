@@ -32,10 +32,11 @@ export function buildLoggerParams(serviceName: string, level: string, pretty: bo
         remove: true,
       },
       serializers: {
+        // Só o caminho: a query string pode trazer dados pessoais (ex.: busca por nome ou e-mail).
         req: (request: { id: string; method: string; url: string }) => ({
           id: request.id,
           method: request.method,
-          url: request.url,
+          url: request.url.split('?')[0],
         }),
         res: (response: { statusCode: number }) => ({ statusCode: response.statusCode }),
       },

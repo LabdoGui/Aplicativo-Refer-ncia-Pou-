@@ -10,6 +10,7 @@ export * from './auth/decorators';
 export * from './auth/token-verifier';
 export * from './auth/token-verification-error';
 export * from './auth/auth.guard';
+export * from './auth/deleted-accounts';
 export * from './health/health';
 export * from './messaging/broker';
 export * from './http/internal-http.client';

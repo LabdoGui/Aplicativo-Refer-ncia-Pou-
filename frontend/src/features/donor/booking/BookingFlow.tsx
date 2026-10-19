@@ -81,7 +81,13 @@ export function BookingFlow({ current, campaignParam }: BookingFlowProps) {
     requestedCampaign && eligibleCampaigns.some((c) => c.id === requestedCampaign.id)
       ? requestedCampaign.id
       : '';
-  const campaignId = campaignChoice ?? defaultCampaign;
+  // A escolha só vale enquanto a campanha se aplica à unidade e ao dia atuais
+  // (o doador pode voltar e trocar um ou outro depois de escolher).
+  const campaignId =
+    campaignChoice !== null &&
+    (campaignChoice === '' || eligibleCampaigns.some((c) => c.id === campaignChoice))
+      ? campaignChoice
+      : defaultCampaign;
   const campaignNotice =
     !current && requestedCampaign && unitId && date && !defaultCampaign
       ? `A campanha "${requestedCampaign.title}" não vale para esta unidade ou data. O agendamento será feito sem campanha.`

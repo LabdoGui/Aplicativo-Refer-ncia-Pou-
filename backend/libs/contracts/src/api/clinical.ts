@@ -160,6 +160,11 @@ export interface EligibilityView {
   lastDonationAt: string | null;
   /** Data informativa (RN04): só orienta; quem decide é a equipe. */
   nextEligibleAt: string | null;
+  /**
+   * De onde vem a data: a última doação registrada no sistema ou a pré-triagem
+   * válida mais recente (última doação autodeclarada ou outra regra com data).
+   */
+  source: 'DONATION' | 'PRE_SCREENING' | null;
   intervalDays: number;
   validationStatus: ValidationStatus;
 }

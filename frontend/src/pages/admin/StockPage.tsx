@@ -40,8 +40,11 @@ export function StockPage() {
         {saved && (
           <Alert tone="ok" role="status">
             {MOVEMENT_TYPE_LABELS[saved.type]} de {bags(saved.quantity)} do tipo{' '}
-            {BLOOD_TYPE_LABELS[saved.bloodType]} registrada. Saldo atual: {bags(saved.balanceAfter)}
-            .
+            {BLOOD_TYPE_LABELS[saved.bloodType]} registrada.{' '}
+            {/* Movimentação retroativa: o saldo devolvido é o da data informada. */}
+            {Date.parse(saved.createdAt) - Date.parse(saved.occurredAt) > 60_000
+              ? `Saldo na data informada: ${bags(saved.balanceAfter)}.`
+              : `Saldo atual: ${bags(saved.balanceAfter)}.`}
           </Alert>
         )}
       </div>

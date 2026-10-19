@@ -14,9 +14,10 @@ export const UNFINISHED_REASON = 'Atendimento não finalizado no dia do agendame
  * Encerra agendamentos que ficaram para trás, para que não prendam o doador
  * (RN03: um agendamento ativo por vez) nem a agenda:
  *  - em aberto (BOOKED/CONFIRMED) duas horas depois do fim da vaga → falta;
- *  - com check-in de um dia anterior, sem atendimento finalizado → cancelado
- *    pelo sistema. Se a enfermagem ainda finalizar esse atendimento, o evento
- *    clinical.attendance.completed conclui o agendamento normalmente.
+ *  - com check-in de antes de ontem, sem atendimento finalizado → cancelado
+ *    pelo sistema. O dia seguinte inteiro fica livre para a enfermagem
+ *    registrar a triagem atrasada; se ela ainda finalizar o atendimento depois,
+ *    o evento clinical.attendance.completed conclui o agendamento normalmente.
  * Roda a cada 15 minutos e, para o próprio doador, antes de uma nova reserva.
  */
 @Injectable()
@@ -46,8 +47,9 @@ export class StaleAppointmentsService {
   /** Encerra os agendamentos vencidos (de todos ou de um doador). Devolve quantos mudaram. */
   async expire(now: Date, donorId?: string): Promise<number> {
     const noShowCutoff = new Date(now.getTime() - NO_SHOW_GRACE_HOURS * 3_600_000);
-    const startOfToday = DateTime.fromJSDate(now, { zone: DEFAULT_TIMEZONE })
+    const startOfYesterday = DateTime.fromJSDate(now, { zone: DEFAULT_TIMEZONE })
       .startOf('day')
+      .minus({ days: 1 })
       .toJSDate();
     // $1 = agora, $2 = limite, $3 = doador (opcional).
     const donorFilter = donorId ? `AND "donorId" = $3::uuid` : '';
@@ -71,7 +73,7 @@ export class StaleAppointmentsService {
                 "cancelReason" = '${UNFINISHED_REASON}', "updatedAt" = $1::timestamptz
           WHERE "status" = 'CHECKED_IN' AND "startsAt" < $2::timestamptz ${donorFilter}
           RETURNING "id"`,
-        ...params(startOfToday),
+        ...params(startOfYesterday),
       );
       for (const { id } of noShows) {
         await this.audit.record(

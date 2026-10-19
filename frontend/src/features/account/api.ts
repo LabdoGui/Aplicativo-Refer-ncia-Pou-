@@ -7,6 +7,7 @@ import type {
   UpdateConsentsRequest,
   UpdateMeRequest,
 } from '@pulso/contracts';
+import { patchSessionUser, refreshSession } from '@/features/auth/session-store';
 import { apiGet, apiPatch, apiPut, apiRequest } from '@/lib/api';
 
 export const accountKeys = {
@@ -25,7 +26,13 @@ export function useUpdateMe() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (data: UpdateMeRequest) => apiPatch<MeResponse>('/users/me', data),
-    onSuccess: (me) => queryClient.setQueryData(accountKeys.me, me),
+    onSuccess: (me) => {
+      queryClient.setQueryData(accountKeys.me, me);
+      // Cabeçalho e saudação mostram o nome novo na hora; a renovação traz um
+      // token com o nome atualizado para os demais serviços.
+      patchSessionUser({ name: me.name });
+      void refreshSession();
+    },
   });
 }
 

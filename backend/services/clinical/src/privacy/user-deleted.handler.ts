@@ -1,5 +1,5 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
-import { EventConsumer, FieldEncryption } from '@pulso/common';
+import { EventConsumer, FieldEncryption, recordDeletedAccount } from '@pulso/common';
 import { EVENTS } from '@pulso/contracts';
 import type { Prisma } from '../../generated/prisma';
 
@@ -22,6 +22,7 @@ export class UserDeletedHandler implements OnModuleInit {
       EVENTS.USER_DELETED,
       'erase-donor-data',
       async ({ data }, tx) => {
+        await recordDeletedAccount(tx, data.userId);
         await tx.preScreening.updateMany({
           where: { donorId: data.userId },
           data: {

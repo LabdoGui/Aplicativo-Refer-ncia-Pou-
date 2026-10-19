@@ -13,9 +13,11 @@ export function BlocksPanel({ unitId }: { unitId: string }) {
   const remove = useDeleteBlock(unitId);
   const [form, setForm] = useState({ startsAt: '', endsAt: '', reason: '' });
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   function submit() {
     setError(null);
+    setNotice(null);
     if (!form.startsAt || !form.endsAt || form.reason.trim().length < 3) {
       setError('Preencha início, fim e o motivo (mínimo de 3 caracteres).');
       return;
@@ -30,7 +32,17 @@ export function BlocksPanel({ unitId }: { unitId: string }) {
         endsAt: localInputToIso(form.endsAt),
         reason: form.reason.trim(),
       },
-      { onSuccess: () => setForm({ startsAt: '', endsAt: '', reason: '' }) },
+      {
+        onSuccess: (block) => {
+          setForm({ startsAt: '', endsAt: '', reason: '' });
+          const cancelled = block.cancelledAppointments ?? 0;
+          setNotice(
+            cancelled === 0
+              ? 'Bloqueio criado. Não havia agendamentos no período.'
+              : `Bloqueio criado. ${cancelled} ${cancelled === 1 ? 'agendamento foi cancelado' : 'agendamentos foram cancelados'} e os doadores foram avisados.`,
+          );
+        },
+      },
     );
   }
 
@@ -40,7 +52,8 @@ export function BlocksPanel({ unitId }: { unitId: string }) {
         Bloqueios
       </h2>
       <p className="mt-1 text-sm text-ink-muted">
-        Um bloqueio impede novas reservas; agendamentos já feitos no período continuam valendo.
+        Um bloqueio impede novas reservas. Agendamentos já marcados no período são cancelados e os
+        doadores recebem um aviso.
       </p>
       <div className="mt-4 grid gap-4 md:grid-cols-[1fr_1fr_2fr_auto] md:items-end">
         <TextField
@@ -69,6 +82,11 @@ export function BlocksPanel({ unitId }: { unitId: string }) {
       {error && (
         <p role="alert" className="mt-2 text-sm font-medium text-critical-strong">
           {error}
+        </p>
+      )}
+      {notice && (
+        <p role="status" className="mt-2 text-sm font-medium text-ok-strong">
+          {notice}
         </p>
       )}
       <ProblemAlert error={create.error ?? remove.error} className="mt-3" />

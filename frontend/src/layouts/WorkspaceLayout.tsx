@@ -73,7 +73,7 @@ export function WorkspaceLayout({
               Dados fictícios
             </Badge>
             {notificationsPath && <NotificationBell to={notificationsPath} />}
-            <AccountMenu />
+            <AccountMenu links={[{ to: `${homePath}/conta`, label: 'Minha conta' }]} />
           </div>
         </header>
 

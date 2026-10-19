@@ -17,7 +17,7 @@ function setup(noShows: string[], unfinished: string[]) {
 const now = new Date('2026-10-19T13:00:00.000Z');
 
 describe('StaleAppointmentsService.expire', () => {
-  it('marca falta depois da tolerância e encerra check-in de dias anteriores', async () => {
+  it('marca falta depois da tolerância e encerra check-in de antes de ontem', async () => {
     const { service, tx, audit } = setup(['a1', 'a2'], ['a3']);
     await expect(service.expire(now)).resolves.toBe(3);
 
@@ -31,8 +31,9 @@ describe('StaleAppointmentsService.expire', () => {
 
     const [unfinishedSql, ...unfinishedParams] = tx.$queryRawUnsafe.mock.calls[1];
     expect(unfinishedSql).toContain(`"status" = 'CHECKED_IN'`);
-    // Início do dia local (00:00 em São Paulo = 03:00 UTC).
-    expect(unfinishedParams[1]).toBe('2026-10-19T03:00:00.000Z');
+    // Início de ontem no fuso local (00:00 de 18/10 em São Paulo = 03:00 UTC):
+    // um check-in de ontem ainda pode receber a triagem atrasada.
+    expect(unfinishedParams[1]).toBe('2026-10-18T03:00:00.000Z');
 
     expect(audit.record).toHaveBeenCalledTimes(3);
     expect(audit.record).toHaveBeenCalledWith(

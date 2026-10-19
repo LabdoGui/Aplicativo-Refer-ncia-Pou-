@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { AppException, AuditService } from '@pulso/common';
+import { AppException, AuditService, OutboxService } from '@pulso/common';
 import {
+  EVENTS,
   hasPermission,
   type AuthUser,
   type ScheduleBlockView,
@@ -9,6 +10,7 @@ import {
 } from '@pulso/contracts';
 import type { HealthUnit, ScheduleBlock } from '../../generated/prisma';
 import { toUnitView } from '../appointments/appointment.mapper';
+import { releaseSlot } from '../appointments/slot-ledger';
 import { validateRules } from '../domain/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import type {
@@ -37,6 +39,7 @@ export class UnitsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly outbox: OutboxService,
   ) {}
 
   async list(includeInactive: boolean): Promise<UnitView[]> {
@@ -159,7 +162,11 @@ export class UnitsService {
     return blocks.map(toBlockView);
   }
 
-  /** Bloqueia um período para novos agendamentos (os já marcados continuam válidos). */
+  /**
+   * Bloqueia um período (RF53): novos agendamentos ficam impedidos e os já
+   * marcados no período são cancelados pela unidade, com aviso ao doador
+   * (evento scheduling.appointment.cancelled) e a vaga liberada.
+   */
   async createBlock(
     actor: AuthUser,
     unitId: string,
@@ -187,32 +194,71 @@ export class UnitsService {
         [{ field: 'endsAt', message: 'O bloqueio precisa terminar no futuro.' }],
       );
     }
-    const block = await this.prisma.$transaction(async (tx) => {
+    const { block, cancelled } = await this.prisma.$transaction(async (tx) => {
       const created = await tx.scheduleBlock.create({
         data: { unitId, startsAt, endsAt, reason: dto.reason, createdById: actor.id },
       });
-      const affected = await tx.appointment.count({
+      const affected = await tx.appointment.findMany({
         where: {
           unitId,
           status: { in: ['BOOKED', 'CONFIRMED'] },
           startsAt: { lt: endsAt },
           endsAt: { gt: startsAt },
         },
+        include: { unit: { select: { name: true } } },
       });
+      let cancelledCount = 0;
+      for (const appointment of affected) {
+        const { count } = await tx.appointment.updateMany({
+          where: { id: appointment.id, status: { in: ['BOOKED', 'CONFIRMED'] } },
+          data: {
+            status: 'CANCELLED',
+            cancelledAt: new Date(),
+            cancelledBy: 'STAFF',
+            cancelReason: `Período bloqueado pela unidade: ${dto.reason}`,
+          },
+        });
+        if (count === 0) continue;
+        cancelledCount += 1;
+        await releaseSlot(tx, appointment.slotId);
+        await this.outbox.enqueue(
+          tx,
+          EVENTS.APPOINTMENT_CANCELLED,
+          {
+            appointmentId: appointment.id,
+            donorId: appointment.donorId,
+            unitName: appointment.unit.name,
+            startsAt: appointment.startsAt.toISOString(),
+            cancelledBy: 'STAFF',
+          },
+          requestId,
+        );
+        await this.audit.record(
+          {
+            actor,
+            action: 'appointment.cancelled',
+            entity: 'appointment',
+            entityId: appointment.id,
+            metadata: { cancelledBy: 'STAFF', reason: 'unit_blocked', blockId: created.id },
+            requestId,
+          },
+          tx,
+        );
+      }
       await this.audit.record(
         {
           actor,
           action: 'unit.block_created',
           entity: 'schedule_block',
           entityId: created.id,
-          metadata: { unitId, activeAppointmentsInPeriod: affected },
+          metadata: { unitId, cancelledAppointments: cancelledCount },
           requestId,
         },
         tx,
       );
-      return created;
+      return { block: created, cancelled: cancelledCount };
     });
-    return toBlockView(block);
+    return { ...toBlockView(block), cancelledAppointments: cancelled };
   }
 
   async deleteBlock(

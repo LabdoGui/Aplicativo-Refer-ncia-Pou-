@@ -5,6 +5,7 @@ import {
   CoreModule,
   DatabaseHealthIndicator,
   HealthModule,
+  DeletedAccountsModule,
   MessagingModule,
 } from '@pulso/common';
 import { AdminCatalogService } from './admin/admin-catalog.service';
@@ -32,6 +33,7 @@ import { SeedService } from './seed/seed.service';
   imports: [
     CoreModule.forRoot({ serviceName: 'engagement-service', envSchema }),
     PrismaModule,
+    DeletedAccountsModule.forRoot(),
     MessagingModule.forRoot(),
     AuditModule.forRoot(),
     HealthModule.forRoot([DatabaseHealthIndicator, BrokerHealthIndicator]),

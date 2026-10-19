@@ -12,6 +12,7 @@ describe('UserDeletedHandler (clinical)', () => {
     };
     const encryption = { encryptJson: jest.fn(() => 'cifrado:[]') };
     const tx = {
+      $executeRawUnsafe: jest.fn(async () => 1),
       preScreening: { updateMany: jest.fn(async () => ({ count: 2 })) },
       document: { updateMany: jest.fn(async () => ({ count: 1 })) },
     };

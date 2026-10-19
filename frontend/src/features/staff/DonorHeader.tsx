@@ -3,18 +3,29 @@ import { BLOOD_TYPE_LABELS, type StaffAppointmentView } from '@pulso/contracts';
 import { Badge, Button, Card } from '@/components/ui';
 import { AppointmentStatusBadge } from '@/features/scheduling/AppointmentStatusBadge';
 import { formatLongDate, formatTime } from '@/lib/format';
+import { canCheckInOn } from './AgendaTable';
 
 interface DonorHeaderProps {
   appointment: StaffAppointmentView;
   canCheckIn: boolean;
+  /** Tipo sanguíneo declarado: só para a enfermagem (a API não o envia aos demais). */
+  showBloodType: boolean;
   checkingIn: boolean;
   onCheckIn: () => void;
 }
 
 /** Quem é o doador e qual é o agendamento (sem dados clínicos). */
-export function DonorHeader({ appointment, canCheckIn, checkingIn, onCheckIn }: DonorHeaderProps) {
+export function DonorHeader({
+  appointment,
+  canCheckIn,
+  showBloodType,
+  checkingIn,
+  onCheckIn,
+}: DonorHeaderProps) {
   const donor = appointment.donorSummary;
-  const open = appointment.status === 'BOOKED' || appointment.status === 'CONFIRMED';
+  const open =
+    (appointment.status === 'BOOKED' || appointment.status === 'CONFIRMED') &&
+    canCheckInOn(appointment.startsAt, appointment.earlyCheckInAllowed);
   return (
     <Card as="section" aria-labelledby="doador-titulo" className="space-y-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -34,12 +45,16 @@ export function DonorHeader({ appointment, canCheckIn, checkingIn, onCheckIn }: 
             {donor.age !== null ? `${donor.age} anos` : '—'}
           </dd>
         </div>
-        <div>
-          <dt className="text-ink-muted">Tipo sanguíneo declarado</dt>
-          <dd className="font-semibold text-ink">
-            {donor.declaredBloodType ? BLOOD_TYPE_LABELS[donor.declaredBloodType] : 'Não informado'}
-          </dd>
-        </div>
+        {showBloodType && (
+          <div>
+            <dt className="text-ink-muted">Tipo sanguíneo declarado</dt>
+            <dd className="font-semibold text-ink">
+              {donor.declaredBloodType
+                ? BLOOD_TYPE_LABELS[donor.declaredBloodType]
+                : 'Não informado'}
+            </dd>
+          </div>
+        )}
         <div>
           <dt className="text-ink-muted">Horário</dt>
           <dd className="font-semibold text-ink">
@@ -52,9 +67,11 @@ export function DonorHeader({ appointment, canCheckIn, checkingIn, onCheckIn }: 
         </div>
       </dl>
       {appointment.campaign && <Badge tone="brand">Campanha: {appointment.campaign.title}</Badge>}
-      <p className="text-xs text-ink-muted">
-        O tipo sanguíneo acima foi informado pelo próprio doador e não é laudo.
-      </p>
+      {showBloodType && (
+        <p className="text-xs text-ink-muted">
+          O tipo sanguíneo acima foi informado pelo próprio doador e não é laudo.
+        </p>
+      )}
       {open && canCheckIn && (
         <Button variant="secondary" loading={checkingIn} onClick={onCheckIn}>
           <UserCheck aria-hidden="true" className="size-4" /> Fazer check-in

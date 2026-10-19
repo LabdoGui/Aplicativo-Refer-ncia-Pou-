@@ -20,6 +20,10 @@ const notifications = page(
   () => import('@/pages/shared/NotificationsPage'),
   (m) => m.NotificationsPage,
 );
+const account = page(
+  () => import('@/pages/shared/AccountPage'),
+  (m) => m.AccountPage,
+);
 const notFoundInArea: RouteObject = { path: '*', element: <NotFoundPage /> };
 
 /** Árvore de rotas (separada do router para permitir renderização em testes). */
@@ -195,7 +199,7 @@ export const routes: RouteObject[] = [
               (m) => m.AttendancePage,
             ),
           },
-          { path: 'notificacoes', lazy: notifications },
+          { path: 'conta', lazy: account },
           notFoundInArea,
         ],
       },
@@ -292,6 +296,7 @@ export const routes: RouteObject[] = [
             ),
           },
           { path: 'notificacoes', lazy: notifications },
+          { path: 'conta', lazy: account },
           notFoundInArea,
         ],
       },

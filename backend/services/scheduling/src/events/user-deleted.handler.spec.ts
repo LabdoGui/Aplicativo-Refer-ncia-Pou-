@@ -15,7 +15,7 @@ function setup(open: Array<{ id: string; slotId: string }>, updated = 1) {
       findMany: jest.fn(async () => open),
       updateMany: jest.fn(async () => ({ count: updated })),
     },
-    $executeRawUnsafe: jest.fn(async () => 1),
+    $executeRawUnsafe: jest.fn(async (_sql: string, ..._values: unknown[]) => 1),
   };
   new UserDeletedHandler(consumer as never, audit as never).onModuleInit();
   const run = () =>
@@ -45,14 +45,17 @@ describe('UserDeletedHandler (scheduling)', () => {
         data: expect.objectContaining({ status: 'CANCELLED', cancelledBy: 'SYSTEM' }),
       }),
     );
-    expect(tx.$executeRawUnsafe).toHaveBeenCalledTimes(2);
+    // 1 registro da conta excluída + 2 vagas liberadas.
+    expect(tx.$executeRawUnsafe).toHaveBeenCalledTimes(3);
+    expect(tx.$executeRawUnsafe.mock.calls[0][0]).toContain('"deleted_users"');
     expect(audit.record).toHaveBeenCalledTimes(2);
   });
 
   it('não libera vaga de agendamento que mudou de situação no meio do caminho', async () => {
     const { run, tx, audit } = setup([{ id: 'a1', slotId: 's1' }], 0);
     await run();
-    expect(tx.$executeRawUnsafe).not.toHaveBeenCalled();
+    // Só o registro da conta excluída; nenhuma vaga liberada.
+    expect(tx.$executeRawUnsafe).toHaveBeenCalledTimes(1);
     expect(audit.record).not.toHaveBeenCalled();
   });
 });

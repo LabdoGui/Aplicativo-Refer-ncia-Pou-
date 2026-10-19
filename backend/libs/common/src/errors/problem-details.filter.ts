@@ -125,28 +125,21 @@ export class ProblemDetailsFilter implements ExceptionFilter {
     const problem = this.toProblem(exception);
     problem.instance = request.originalUrl;
     problem.requestId = requestId;
+    // Nos logs, só o caminho: a query string pode trazer dados pessoais.
+    const path = request.originalUrl.split('?')[0];
 
     if (problem.status >= 500 && exception instanceof AppException) {
       // Falha prevista (ex.: serviço dependente fora do ar): quem lançou já registrou o detalhe.
-      this.logger.warn(
-        { requestId, path: request.originalUrl, code: problem.code },
-        `Erro ${problem.status} tratado`,
-      );
+      this.logger.warn({ requestId, path, code: problem.code }, `Erro ${problem.status} tratado`);
     } else if (problem.status >= 500) {
-      this.logger.error(
-        { err: exception, requestId, path: request.originalUrl },
-        `Erro ${problem.status} não tratado`,
-      );
+      this.logger.error({ err: exception, requestId, path }, `Erro ${problem.status} não tratado`);
     } else if (problem.status === 401 || problem.status === 403) {
-      this.logger.warn(
-        { requestId, path: request.originalUrl, code: problem.code },
-        'Acesso negado',
-      );
+      this.logger.warn({ requestId, path, code: problem.code }, 'Acesso negado');
     } else if (exposedClientErrorStatus(exception) !== undefined) {
       this.logger.warn(
         {
           requestId,
-          path: request.originalUrl,
+          path,
           code: problem.code,
           reason: (exception as { type?: unknown }).type,
         },

@@ -50,6 +50,8 @@ export interface ScheduleBlockView {
   endsAt: string;
   reason: string;
   createdAt: string;
+  /** Só na criação: agendamentos do período cancelados (e doadores avisados) (RF53). */
+  cancelledAppointments?: number;
 }
 
 export interface CreateScheduleBlockRequest {
@@ -144,6 +146,8 @@ export interface AgendaResponse {
 export interface StaffAppointmentView extends AgendaItem {
   unit: { id: string; name: string };
   donorSummary: DonorSummary;
+  /** Modo demonstração: check-in de agendamentos de dias futuros liberado. */
+  earlyCheckInAllowed: boolean;
 }
 
 /** Agendamento para outros serviços (GET /internal/appointments/:id). */

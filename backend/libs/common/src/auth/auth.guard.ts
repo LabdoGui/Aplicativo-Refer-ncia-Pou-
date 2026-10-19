@@ -1,4 +1,11 @@
-import { CanActivate, ExecutionContext, Inject, Injectable, Logger } from '@nestjs/common';
+import {
+  CanActivate,
+  ExecutionContext,
+  Inject,
+  Injectable,
+  Logger,
+  Optional,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { timingSafeEqual } from 'node:crypto';
 import {
@@ -12,11 +19,13 @@ import { AppException } from '../errors/app.exception';
 import { APP_CONFIG, TOKEN_VERIFIER } from '../tokens';
 import type { BaseEnv } from '../config/env';
 import type { TokenVerifier } from './token-verifier';
+import { DELETED_ACCOUNTS, type DeletedAccounts } from './deleted-accounts';
 import { classifyVerificationError, tokenVerificationException } from './token-verification-error';
 import { IS_INTERNAL_KEY, IS_PUBLIC_KEY, PERMISSIONS_KEY, ROLES_KEY } from './decorators';
 
 interface GuardRequest {
   id?: unknown;
+  method?: string;
   originalUrl?: string;
   headers: Record<string, string | string[] | undefined>;
   user?: AuthUser;
@@ -44,6 +53,9 @@ export class AuthGuard implements CanActivate {
     private readonly reflector: Reflector,
     @Inject(TOKEN_VERIFIER) private readonly verifier: TokenVerifier,
     @Inject(APP_CONFIG) private readonly config: BaseEnv,
+    @Optional()
+    @Inject(DELETED_ACCOUNTS)
+    private readonly deletedAccounts?: DeletedAccounts,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -100,6 +112,12 @@ export class AuthGuard implements CanActivate {
       });
     }
     request.user = user;
+
+    // Conta excluída com token ainda válido: nenhuma escrita (LGPD, exclusão definitiva).
+    const writes = !['GET', 'HEAD', 'OPTIONS'].includes((request.method ?? 'GET').toUpperCase());
+    if (writes && this.deletedAccounts && (await this.deletedAccounts.isDeleted(user.id))) {
+      throw new AppException(401, 'SESSION_EXPIRED', 'Sua sessão foi encerrada. Entre novamente.');
+    }
 
     if (roles && roles.length > 0 && !roles.includes(user.role)) {
       throw new AppException(403, 'FORBIDDEN_ROLE', 'Seu perfil não tem acesso a esta área.');

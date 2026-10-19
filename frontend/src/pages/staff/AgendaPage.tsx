@@ -107,6 +107,7 @@ export function AgendaPage() {
                       pendingId={checkIn.isPending ? (checkIn.variables ?? null) : null}
                       onCheckIn={handleCheckIn}
                       onNoShow={setNoShowTarget}
+                      earlyCheckInAllowed={agenda.data.earlyCheckInAllowed}
                     />
                   </div>
                 )

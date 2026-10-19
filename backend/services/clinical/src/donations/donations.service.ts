@@ -191,20 +191,37 @@ export class DonationsService {
   }
 
   /**
-   * Data informativa da próxima doação, calculada com o intervalo vigente
-   * (se a instituição mudar o parâmetro, a data acompanha).
+   * Data informativa da próxima doação (RN04), calculada com o intervalo vigente
+   * a partir da última doação registrada (se a instituição mudar o parâmetro, a
+   * data acompanha). Se a pré-triagem válida mais recente indicar uma data
+   * posterior (por exemplo, pela última doação autodeclarada), vale essa.
    */
   async eligibility(actor: AuthUser): Promise<EligibilityView> {
     const settings = await this.settings.get();
-    const last = await this.prisma.donation.findFirst({
-      where: { donorId: actor.id, status: 'COMPLETED' },
-      orderBy: { occurredAt: 'desc' },
-      select: { occurredAt: true },
-    });
-    const next = last ? nextEligibleDate(last.occurredAt, settings.donationIntervalDays) : null;
+    const [last, preScreening] = await Promise.all([
+      this.prisma.donation.findFirst({
+        where: { donorId: actor.id, status: 'COMPLETED' },
+        orderBy: { occurredAt: 'desc' },
+        select: { occurredAt: true },
+      }),
+      this.prisma.preScreening.findFirst({
+        where: { donorId: actor.id, expiresAt: { gt: new Date() } },
+        orderBy: { createdAt: 'desc' },
+        select: { waitUntil: true },
+      }),
+    ]);
+    const fromDonation = last
+      ? nextEligibleDate(last.occurredAt, settings.donationIntervalDays)
+      : null;
+    const fromPreScreening = preScreening?.waitUntil
+      ? preScreening.waitUntil.toISOString().slice(0, 10)
+      : null;
+    const usePreScreening =
+      fromPreScreening !== null && (fromDonation === null || fromPreScreening > fromDonation);
     return {
       lastDonationAt: last?.occurredAt.toISOString() ?? null,
-      nextEligibleAt: next,
+      nextEligibleAt: usePreScreening ? fromPreScreening : fromDonation,
+      source: usePreScreening ? 'PRE_SCREENING' : fromDonation ? 'DONATION' : null,
       intervalDays: settings.donationIntervalDays,
       validationStatus: settings.intervalValidationStatus,
     };

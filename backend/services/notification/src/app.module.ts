@@ -4,6 +4,7 @@ import {
   CoreModule,
   DatabaseHealthIndicator,
   HealthModule,
+  DeletedAccountsModule,
   MessagingModule,
 } from '@pulso/common';
 import { envSchema } from './config';
@@ -15,6 +16,7 @@ import { SeedService } from './seed/seed.service';
   imports: [
     CoreModule.forRoot({ serviceName: 'notification-service', envSchema }),
     PrismaModule,
+    DeletedAccountsModule.forRoot(),
     // Só consome eventos: sem tabela outbox_events e sem OutboxRelay.
     MessagingModule.forRoot({ outbox: false }),
     HealthModule.forRoot([DatabaseHealthIndicator, BrokerHealthIndicator]),

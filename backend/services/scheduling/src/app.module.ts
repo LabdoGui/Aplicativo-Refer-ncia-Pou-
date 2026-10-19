@@ -6,6 +6,7 @@ import {
   CoreModule,
   DatabaseHealthIndicator,
   HealthModule,
+  DeletedAccountsModule,
   MessagingModule,
 } from '@pulso/common';
 import { AdminAppointmentsController } from './admin/admin-appointments.controller';
@@ -33,6 +34,7 @@ import { UnitsService } from './units/units.service';
   imports: [
     CoreModule.forRoot({ serviceName: 'scheduling-service', envSchema }),
     PrismaModule,
+    DeletedAccountsModule.forRoot(),
     MessagingModule.forRoot(),
     AuditModule.forRoot(),
     HealthModule.forRoot([DatabaseHealthIndicator, BrokerHealthIndicator]),

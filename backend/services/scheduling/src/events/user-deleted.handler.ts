@@ -1,5 +1,5 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
-import { AuditService, EventConsumer } from '@pulso/common';
+import { AuditService, EventConsumer, recordDeletedAccount } from '@pulso/common';
 import { EVENTS } from '@pulso/contracts';
 import type { Prisma } from '../../generated/prisma';
 import { releaseSlot } from '../appointments/slot-ledger';
@@ -21,6 +21,7 @@ export class UserDeletedHandler implements OnModuleInit {
       EVENTS.USER_DELETED,
       'cancel-open-appointments',
       async ({ data, correlationId }, tx) => {
+        await recordDeletedAccount(tx, data.userId);
         const open = await tx.appointment.findMany({
           where: { donorId: data.userId, status: { in: ['BOOKED', 'CONFIRMED'] } },
           select: { id: true, slotId: true },

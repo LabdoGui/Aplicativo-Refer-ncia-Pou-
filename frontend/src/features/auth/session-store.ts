@@ -46,6 +46,12 @@ export function applySession(session: AuthSession): void {
   setState({ status: 'authenticated', user: session.user, endedReason: null });
 }
 
+/** Atualiza os dados exibidos da pessoa logada (ex.: depois de mudar o nome no perfil). */
+export function patchSessionUser(patch: Partial<SessionUser>): void {
+  if (!state.user) return;
+  setState({ ...state, user: { ...state.user, ...patch } });
+}
+
 export function clearSession(reason: SessionState['endedReason'] = null): void {
   accessToken = null;
   clearTimeout(refreshTimer);

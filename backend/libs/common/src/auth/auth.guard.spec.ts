@@ -89,6 +89,7 @@ type AnyHandler = keyof FakeController | keyof AdminController | keyof PublicRes
 
 interface FakeRequest {
   headers: Record<string, string | undefined>;
+  method?: string;
   user?: AuthUser;
 }
 
@@ -364,5 +365,29 @@ describe('AuthGuard', () => {
     const context = { getType: () => 'rpc' } as unknown as ExecutionContext;
 
     await expect(guard.canActivate(context)).resolves.toBe(true);
+  });
+
+  describe('conta excluída com token ainda válido', () => {
+    const deleted = { isDeleted: jest.fn(async (id: string) => id === USERS['token-doador'].id) };
+    const guarded = new AuthGuard(
+      new Reflector(),
+      fakeVerifier,
+      { INTERNAL_API_TOKEN: INTERNAL_TOKEN } as BaseEnv,
+      deleted,
+    );
+
+    it('recusa escritas (401 SESSION_EXPIRED)', async () => {
+      const { context, request } = createContext('protectedRoute', bearer('token-doador'));
+      request.method = 'POST';
+      await expectAppException(guarded.canActivate(context), 401, 'SESSION_EXPIRED');
+    });
+
+    it('não consulta o registro em leituras', async () => {
+      deleted.isDeleted.mockClear();
+      const { context, request } = createContext('protectedRoute', bearer('token-doador'));
+      request.method = 'GET';
+      await expect(guarded.canActivate(context)).resolves.toBe(true);
+      expect(deleted.isDeleted).not.toHaveBeenCalled();
+    });
   });
 });
