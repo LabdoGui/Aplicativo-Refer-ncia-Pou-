@@ -98,7 +98,8 @@ function ConsentRow({
           variant={consent.granted ? 'outline' : 'secondary'}
           size="sm"
           loading={pending}
-          aria-pressed={consent.granted}
+          // Ação (não interruptor): o estado atual já está no texto "Aceito/Recusado em".
+          aria-label={`${consent.granted ? 'Desativar' : 'Ativar'}: ${consent.title}`}
           onClick={() => onToggle(!consent.granted)}
         >
           {consent.granted ? 'Desativar' : 'Ativar'}

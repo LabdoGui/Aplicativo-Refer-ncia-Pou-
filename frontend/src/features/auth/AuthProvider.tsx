@@ -1,6 +1,6 @@
 import { useEffect, useSyncExternalStore, type ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { refreshSession, sessionStore } from './session-store';
+import { restoreSession, sessionStore } from './session-store';
 
 /** Restaura a sessão ao abrir o app e limpa o cache de dados quando o usuário sai. */
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -8,7 +8,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const state = useSyncExternalStore(sessionStore.subscribe, sessionStore.getState);
 
   useEffect(() => {
-    void refreshSession();
+    void restoreSession();
   }, []);
 
   useEffect(() => {

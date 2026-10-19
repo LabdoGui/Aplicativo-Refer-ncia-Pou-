@@ -52,6 +52,10 @@ jobs:
     needs: build-test
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      # As três jornadas e a matriz fazem dezenas de logins do mesmo IP em poucos
+      # minutos: acima do limite de produção (20 por minuto) nas rotas de senha.
+      AUTH_RATE_LIMIT_MAX: 200
     steps:
       - name: Baixar o código
         uses: actions/checkout@v4
@@ -81,6 +85,25 @@ jobs:
       # Cada papel contra as rotas de todos os serviços, IDOR e token adulterado.
       - name: Matriz de autorização
         run: node scripts/authz-matrix.mjs
+
+      # Os mesmos 22 passos clicando nas telas (Playwright + Chromium), sem erros no console.
+      - name: Instalar o Playwright
+        run: |
+          npm ci --ignore-scripts
+          npx playwright install --with-deps chromium
+
+      - name: Jornada E2E pelo navegador (22 passos)
+        run: npm run e2e:ui
+        env:
+          E2E_SCREENSHOTS: e2e-ui-capturas
+
+      - name: Capturas da jornada pelo navegador (em caso de falha)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-ui-capturas
+          path: e2e-ui-capturas
+          if-no-files-found: ignore
 
       - name: Estado e logs dos contêineres (em caso de falha)
         if: failure()

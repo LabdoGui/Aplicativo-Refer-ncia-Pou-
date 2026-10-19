@@ -1,11 +1,16 @@
 import type { CookieOptions, Request, Response } from 'express';
-import { API_PREFIX, REFRESH_COOKIE_NAME } from '@pulso/contracts';
+import { API_PREFIX, REFRESH_COOKIE_NAME, SESSION_HINT_COOKIE_NAME } from '@pulso/contracts';
 
 /** O cookie só viaja para as rotas de autenticação. */
 const COOKIE_PATH = `/${API_PREFIX}/auth`;
 
 function baseOptions(secure: boolean): CookieOptions {
   return { httpOnly: true, sameSite: 'strict', secure, path: COOKIE_PATH };
+}
+
+/** Indicador de sessão: visível para o front em todo o site, sem conteúdo sensível. */
+function hintOptions(secure: boolean): CookieOptions {
+  return { httpOnly: false, sameSite: 'strict', secure, path: '/' };
 }
 
 export function setRefreshCookie(
@@ -15,10 +20,12 @@ export function setRefreshCookie(
   secure: boolean,
 ): void {
   response.cookie(REFRESH_COOKIE_NAME, token, { ...baseOptions(secure), maxAge: maxAgeMs });
+  response.cookie(SESSION_HINT_COOKIE_NAME, '1', { ...hintOptions(secure), maxAge: maxAgeMs });
 }
 
 export function clearRefreshCookie(response: Response, secure: boolean): void {
   response.clearCookie(REFRESH_COOKIE_NAME, baseOptions(secure));
+  response.clearCookie(SESSION_HINT_COOKIE_NAME, hintOptions(secure));
 }
 
 export function readRefreshCookie(request: Request): string | undefined {

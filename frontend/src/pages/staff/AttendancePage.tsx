@@ -64,7 +64,8 @@ export function AttendancePage() {
         >
           {appointment.data && (
             <div className="grid gap-6 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
-              <div className="space-y-4">
+              {/* Os dados do doador ficam à vista enquanto a enfermagem rola o atendimento. */}
+              <div className="space-y-4 lg:sticky lg:top-24 lg:self-start">
                 <DonorHeader
                   appointment={appointment.data}
                   canCheckIn={user ? hasPermission(user.role, 'appointment:check-in') : false}

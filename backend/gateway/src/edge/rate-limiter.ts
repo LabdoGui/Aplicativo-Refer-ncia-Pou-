@@ -71,8 +71,13 @@ export class FixedWindowRateLimiter {
 
 export type RateLimitBucket = 'auth' | 'default' | 'exempt';
 
-/** Rotas de credencial, com limite mais baixo (força bruta, criação de contas em massa). */
-const AUTH_ACTIONS = new Set(['login', 'register', 'refresh']);
+/**
+ * Rotas de credencial, com limite mais baixo (força bruta, criação de contas em
+ * massa). O /auth/refresh fica no limite geral: o token tem 256 bits (não há
+ * força bruta a conter) e ele é chamado a cada abertura do app, então um limite
+ * baixo por IP derrubaria sessões válidas de quem divide a rede (ex.: um campus).
+ */
+const AUTH_ACTIONS = new Set(['login', 'register']);
 
 /** Rotas da conta que conferem a senha atual: entram no mesmo limite das de credencial. */
 const PASSWORD_CHECKS = new Set(['PATCH api/v1/users/me/password', 'DELETE api/v1/users/me']);

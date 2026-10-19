@@ -1,4 +1,4 @@
-import type { AuthSession, SessionUser } from '@pulso/contracts';
+import { SESSION_HINT_COOKIE_NAME, type AuthSession, type SessionUser } from '@pulso/contracts';
 import { ApiError, apiRequest, setAuthHandlers } from '@/lib/api';
 
 /**
@@ -85,6 +85,21 @@ async function renew(isRetry = false): Promise<string | null> {
     if (state.status === 'loading') clearSession();
     return null;
   }
+}
+
+/**
+ * Restaura a sessão ao abrir o app. Sem o cookie indicador não há sessão a
+ * restaurar: o visitante fica anônimo sem chamar /auth/refresh.
+ */
+export function restoreSession(): Promise<string | null> {
+  const hasHint = document.cookie
+    .split(';')
+    .some((item) => item.trim() === `${SESSION_HINT_COOKIE_NAME}=1`);
+  if (!hasHint) {
+    clearSession();
+    return Promise.resolve(null);
+  }
+  return refreshSession();
 }
 
 export async function logout(): Promise<void> {

@@ -69,7 +69,6 @@ describe('classifyRateLimit', () => {
   it.each([
     ['POST', '/api/v1/auth/login'],
     ['POST', '/api/v1/auth/register'],
-    ['POST', '/api/v1/auth/refresh'],
     ['post', '/api/v1/auth/login/'],
     ['POST', '/API/V1/Auth//Login'],
     ['PATCH', '/api/v1/users/me/password'],
@@ -81,6 +80,7 @@ describe('classifyRateLimit', () => {
   it.each([
     ['GET', '/api/v1/auth/login'],
     ['POST', '/api/v1/auth/logout'],
+    ['POST', '/api/v1/auth/refresh'],
     ['POST', '/api/v1/appointments'],
     ['GET', '/api/v1/health/services'],
     ['GET', '/api/docs'],

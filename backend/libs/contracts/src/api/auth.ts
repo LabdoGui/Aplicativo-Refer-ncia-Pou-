@@ -17,6 +17,13 @@ export const MIN_DONOR_AGE = 18;
 
 /** Nome do cookie httpOnly do refresh token (Path=/api/v1/auth). */
 export const REFRESH_COOKIE_NAME = 'pulso_refresh';
+/**
+ * Indicador de sessão, legível pelo JavaScript e sem segredo (valor "1"): o
+ * front só tenta renovar a sessão quando ele existe, em vez de chamar
+ * /auth/refresh (e receber 401) a cada visita anônima. Acompanha o cookie do
+ * refresh token: mesma validade e removido junto.
+ */
+export const SESSION_HINT_COOKIE_NAME = 'pulso_session';
 
 export interface SessionUser {
   id: string;

@@ -62,7 +62,7 @@ export function DonationForm({ attendanceId, declaredBloodType }: DonationFormPr
       <p className="mt-1 text-sm text-ink-muted">
         Triagem registrada como apto. Informe os dados da coleta.
       </p>
-      <form onSubmit={onSubmit} noValidate className="mt-5 grid gap-4 sm:grid-cols-3">
+      <form onSubmit={onSubmit} noValidate className="mt-5 grid gap-4 sm:grid-cols-2">
         <SelectField
           label="Tipo sanguíneo"
           required
@@ -99,11 +99,11 @@ export function DonationForm({ attendanceId, declaredBloodType }: DonationFormPr
         />
         <TextAreaField
           label="Observações (opcional)"
-          className="sm:col-span-3"
+          className="sm:col-span-2"
           maxLength={500}
           {...register('notes')}
         />
-        <div className="space-y-3 sm:col-span-3">
+        <div className="space-y-3 sm:col-span-2">
           <ProblemAlert error={record.error} />
           <Button type="submit" loading={record.isPending}>
             Registrar doação

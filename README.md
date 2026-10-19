@@ -65,7 +65,7 @@ O desenvolvimento seguiu as 14 fases do [plano de implementação](docs/16-plano
 | 11 | Banco de Sangue: estoque, movimentações, tendência e histórico | `/admin/estoque` |
 | 12 | Central de notificações alimentada por eventos | sino de notificações |
 | 13 | Segurança e testes: jornada E2E, matriz de autorização, carga, usuários do broker por serviço | `npm run e2e`, `npm run authz`, `npm run test:load` |
-| 14 | Polimento visual, responsividade e acessibilidade | revisão com Playwright |
+| 14 | Polimento visual, responsividade e acessibilidade | `npm run e2e:ui` e revisão com Playwright (360 px) |
 
 ## Arquitetura
 
@@ -157,10 +157,13 @@ Com o ambiente no ar:
 
 ```bash
 npm run e2e          # os 22 passos do critério de aceite, pela API real
+npm run e2e:ui       # os mesmos 22 passos clicando nas telas (Playwright), sem erros no console
 npm run authz        # matriz de autorização: 5 perfis × rotas de todos os serviços, IDOR e token adulterado
 npm run test:load    # carga leve: latência p50/p95/p99 e erros (veja o aviso sobre o rate limit no script)
 node backend/services/scheduling/test/concurrency.e2e.mjs   # reservas simultâneas: nunca passa da capacidade
 ```
+
+Para a jornada pelo navegador, instale o Chromium do Playwright uma vez: `npx playwright install chromium` (com `E2E_SCREENSHOTS=./capturas` ela guarda uma captura por passo).
 
 A jornada E2E cadastra um doador, responde a pré-triagem, agenda, entra como enfermeiro, faz check-in, triagem e doação, confere pontos, conquista, notificação e PDF (com verificação pública) e termina no dashboard, no estoque (entrada e saída), nos gráficos e no histórico.
 
@@ -314,9 +317,9 @@ O desenho completo da API está em [docs/09](docs/09-api.md) e [docs/16, item 4]
 │     └─ common/             @pulso/common: bootstrap, configuração, logs, auth, erros, saúde, mensageria
 ├─ database/init/            criação de schemas e usuários por serviço
 ├─ docker/                   service.Dockerfile (imagem única dos processos Nest), frontend.Dockerfile, nginx.conf, rabbitmq/
-├─ scripts/                  smoke, jornada E2E, matriz de autorização, carga e back-end local
+├─ scripts/                  smoke, jornadas E2E (API e navegador), matriz de autorização, carga, DLQ e back-end local
 ├─ docs/                     documentação acadêmica e técnica
-├─ .github/workflows/ci.yml  build, testes, imagens Docker, smoke, jornada E2E e autorização
+├─ .github/workflows/ci.yml  build, testes, imagens Docker, smoke, jornadas E2E e autorização
 ├─ docker-compose.yml
 └─ package.json              npm workspaces
 ```
