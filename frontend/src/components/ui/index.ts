@@ -16,3 +16,4 @@ export { SegmentedControl } from './SegmentedControl';
 export { StatCard } from './StatCard';
 export { Table, TBody, Td, Th, THead, Tr } from './Table';
 export { Tabs, type TabItem } from './Tabs';
+export { errorCode, ProblemAlert, problemText } from './ProblemAlert';
