@@ -3,6 +3,7 @@
 > **Doe sangue. Mantenha a vida pulsando.**
 
 [![CI](https://github.com/LabdoGui/Aplicativo-Refer-ncia-Pou-/actions/workflows/ci.yml/badge.svg)](https://github.com/LabdoGui/Aplicativo-Refer-ncia-Pou-/actions/workflows/ci.yml)
+[![Abrir no GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/LabdoGui/Aplicativo-Refer-ncia-Pou-?quickstart=1)
 
 O **Pulso** é uma plataforma web responsiva (PWA) de apoio à doação de sangue. Ela acompanha a jornada de quem doa (descoberta, cadastro, pré-triagem informativa, agendamento, lembretes, atendimento, pós-doação e incentivo à recorrência) e oferece à equipe de coleta e à gestão ferramentas para organizar a agenda, registrar o atendimento e acompanhar o estoque de sangue.
 
@@ -123,6 +124,16 @@ Por que 6 serviços e não 11, como os eventos fluem e as decisões tomadas: [do
 - Livres no computador: porta **8080** e, só em `127.0.0.1`, as portas 3000–3006, 5432, 5672 e 15672.
 
 ## Como executar
+
+### Sem instalar nada: GitHub Codespaces
+
+1. Clique no botão **Abrir no GitHub Codespaces** no topo desta página (ou abra <https://codespaces.new/LabdoGui/Aplicativo-Refer-ncia-Pou-?quickstart=1>) e confirme em **Create codespace**. Precisa de uma conta do GitHub; o plano gratuito inclui horas de Codespaces todo mês.
+2. O editor abre no navegador e o terminal mostra o app subindo (`.devcontainer/start.sh`). Da primeira vez leva alguns minutos.
+3. No fim, o terminal mostra **"Pulso no ar"** com o link `https://<nome-do-codespace>-8080.app.github.dev`. O link fica público quando a conta permite, e aí abre em qualquer celular ou computador; se não, a aba **PORTAS** permite torná-lo público (botão direito na porta 8080 → Visibilidade da porta → Pública).
+
+O Codespace desliga sozinho depois de 30 minutos sem uso e o link para de abrir. Para religar, abra o Codespace de novo pela página do repositório (**Code → Codespaces**): o app volta em menos de um minuto, com os mesmos dados. Para não gastar as horas gratuitas, apague o Codespace quando não precisar mais dele.
+
+### No seu computador
 
 ```bash
 git clone https://github.com/LabdoGui/Aplicativo-Refer-ncia-Pou-.git pulso

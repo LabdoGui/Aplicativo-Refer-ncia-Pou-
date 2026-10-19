@@ -1,0 +1,41 @@
+name: Codespaces
+
+# Confere o caminho do botão "Abrir no GitHub Codespaces": monta o mesmo
+# devcontainer (Docker dentro do contêiner), roda o .devcontainer/start.sh e o
+# smoke test lá dentro.
+on:
+  push:
+    paths:
+      - '.devcontainer/**'
+      - 'docker-compose.yml'
+      - 'docker/**'
+      - '.github/workflows/codespaces.yml'
+  pull_request:
+    paths:
+      - '.devcontainer/**'
+      - 'docker-compose.yml'
+      - 'docker/**'
+      - '.github/workflows/codespaces.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codespaces-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  devcontainer:
+    name: Devcontainer sobe o Pulso
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v4
+
+      - name: Montar o devcontainer, subir o app e rodar o smoke test
+        uses: devcontainers/ci@v0.3
+        with:
+          push: never
+          runCmd: bash .devcontainer/start.sh && node scripts/smoke.mjs

@@ -1,0 +1,21 @@
+{
+  // GitHub Codespaces: abre o Pulso completo na nuvem, sem instalar nada.
+  // Ao iniciar, .devcontainer/start.sh sobe tudo com o docker compose e mostra
+  // o link do app (porta 8080) no terminal.
+  "name": "Pulso",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:1-22-bookworm",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+  // 8 imagens para compilar e 10 contêineres no ar: 4 núcleos deixam o
+  // primeiro build em poucos minutos.
+  "hostRequirements": { "cpus": 4, "memory": "8gb" },
+  "forwardPorts": [8080],
+  "portsAttributes": {
+    "8080": { "label": "Pulso", "onAutoForward": "notify" }
+  },
+  // Banco, broker e serviços internos ficam só dentro do Codespace.
+  "otherPortsAttributes": { "onAutoForward": "ignore" },
+  "postStartCommand": "bash .devcontainer/start.sh"
+}
