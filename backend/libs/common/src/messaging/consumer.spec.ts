@@ -93,7 +93,7 @@ describe('EventConsumer', () => {
     attachChannel();
     await consumer.onMessage(message(envelope));
     expect(channel.sendToQueue).toHaveBeenCalledWith(
-      queues.retry,
+      'pulso.notification-service.retry.10s',
       expect.any(Buffer),
       expect.objectContaining({
         headers: expect.objectContaining({ [ATTEMPT_HEADER]: 2 }),
@@ -101,6 +101,25 @@ describe('EventConsumer', () => {
     );
     expect(channel.ack).toHaveBeenCalled();
     expect(processed.size).toBe(0);
+  });
+
+  it('espera mais a cada tentativa (escada de filas de retry)', async () => {
+    consumer.on(EVENTS.USER_REGISTERED, 'welcome', async () => {
+      throw new Error('banco fora');
+    });
+    attachChannel();
+    for (let attempt = 1; attempt < CONSUMER_MAX_ATTEMPTS; attempt++) {
+      await consumer.onMessage(message(envelope, attempt));
+    }
+    expect(channel.sendToQueue.mock.calls.map((call) => call[0])).toEqual(
+      queues.retries.map((retry) => retry.name),
+    );
+    expect(queues.retries.map((retry) => retry.name)).toEqual([
+      'pulso.notification-service.retry.10s',
+      'pulso.notification-service.retry.1m',
+      'pulso.notification-service.retry.5m',
+      'pulso.notification-service.retry.30m',
+    ]);
   });
 
   it('envia para a DLQ depois da última tentativa', async () => {

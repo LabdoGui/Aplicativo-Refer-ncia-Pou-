@@ -21,10 +21,30 @@ import { PrismaService } from '../prisma/prisma.service';
 import { SettingsService } from '../settings/settings.service';
 import type { PreScreeningSubmitDto } from './dto/pre-screening.dto';
 import { toEngineQuestion, toEngineRule, toQuestionView } from './mappers';
-import { answerLabel, evaluateRules, sanitizeAnswers, sortQuestions } from './rule-engine';
+import {
+  answerLabel,
+  evaluateRules,
+  sanitizeAnswers,
+  sortQuestions,
+  type EngineQuestion,
+} from './rule-engine';
 import { PRE_SCREENING_STEPS } from './steps';
 
 type PreScreeningWithSet = PreScreening & { ruleSet: ScreeningRuleSet };
+
+/** Respostas como a equipe as vê: etapa, texto da pergunta e resposta legível. */
+function sharedAnswers(
+  questions: EngineQuestion[],
+  answers: Record<string, AnswerValue>,
+): SharedPreScreeningView['answers'] {
+  return sortQuestions(questions)
+    .filter((question) => answers[question.code] !== undefined)
+    .map((question) => ({
+      step: question.step,
+      question: question.text,
+      answer: answerLabel(question, answers[question.code]),
+    }));
+}
 
 @Injectable()
 export class PreScreeningService {
@@ -84,7 +104,11 @@ export class PreScreeningService {
           triggeredRuleIds: evaluation.triggeredRuleIds,
           guidanceEncrypted: this.encryption.encryptJson(evaluation.guidance),
           // UC03: sem consentimento de compartilhamento, as respostas não são guardadas.
-          answersEncrypted: dto.shareWithStaff ? this.encryption.encryptJson(answers) : null,
+          // Guardadas com o texto da pergunta da época (RN08): editar o questionário
+          // depois não muda o que o doador respondeu.
+          answersEncrypted: dto.shareWithStaff
+            ? this.encryption.encryptJson(sharedAnswers(questions, answers))
+            : null,
           sharedWithStaff: dto.shareWithStaff,
           waitUntil: evaluation.waitUntil ? new Date(`${evaluation.waitUntil}T00:00:00Z`) : null,
           expiresAt: DateTime.fromJSDate(now)
@@ -154,8 +178,9 @@ export class PreScreeningService {
   }
 
   /**
-   * Última pré-triagem compartilhada do doador feita até o dia do atendimento
-   * (vencida aparece marcada como tal).
+   * Pré-triagem mais recente do doador feita até o dia do atendimento, se ele a
+   * compartilhou e ela ainda está válida. Uma pré-triagem mais nova, não
+   * compartilhada, substitui as anteriores: a equipe nunca vê respostas antigas.
    */
   async sharedForStaff(
     donorId: string,
@@ -166,34 +191,20 @@ export class PreScreeningService {
       .endOf('day')
       .toJSDate();
     const record = await this.prisma.preScreening.findFirst({
-      where: {
-        donorId,
-        sharedWithStaff: true,
-        answersEncrypted: { not: null },
-        createdAt: { lte: endOfDay },
-      },
+      where: { donorId, createdAt: { lte: endOfDay } },
       orderBy: { createdAt: 'desc' },
-      include: { ruleSet: { include: { questions: true } } },
     });
-    if (!record || !record.answersEncrypted) return null;
-    const answers = this.encryption.decryptJson<Record<string, AnswerValue>>(
-      record.answersEncrypted,
-    );
-    const questions = sortQuestions(record.ruleSet.questions.map(toEngineQuestion));
+    if (!record || !record.sharedWithStaff || !record.answersEncrypted) return null;
+    if (record.expiresAt <= new Date()) return null;
     return {
       id: record.id,
       result: record.result,
       createdAt: record.createdAt.toISOString(),
       expiresAt: record.expiresAt.toISOString(),
-      expired: record.expiresAt <= new Date(),
       guidance: this.encryption.decryptJson<PreScreeningGuidance[]>(record.guidanceEncrypted),
-      answers: questions
-        .filter((question) => answers[question.code] !== undefined)
-        .map((question) => ({
-          step: question.step,
-          question: question.text,
-          answer: answerLabel(question, answers[question.code]),
-        })),
+      answers: this.encryption.decryptJson<SharedPreScreeningView['answers']>(
+        record.answersEncrypted,
+      ),
     };
   }
 

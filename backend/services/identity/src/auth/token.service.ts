@@ -33,11 +33,12 @@ export class TokenService {
   }
 
   /** Access token RS256 de curta duração com sub, papel, nome e unidades. */
-  signAccessToken(subject: TokenSubject): Promise<string> {
+  signAccessToken(subject: TokenSubject, sessionId?: string): Promise<string> {
     return new SignJWT({
       role: subject.role,
       name: subject.name,
       ...(subject.unitIds.length > 0 ? { unitIds: subject.unitIds } : {}),
+      ...(sessionId ? { sid: sessionId } : {}),
     })
       .setProtectedHeader({ alg: 'RS256', kid: this.keys.kid, typ: 'JWT' })
       .setSubject(subject.id)

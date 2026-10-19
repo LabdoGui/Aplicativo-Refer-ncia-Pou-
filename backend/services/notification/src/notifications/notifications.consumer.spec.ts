@@ -16,6 +16,7 @@ function setup() {
   const stored = new Map<string, unknown>();
   const tx = {
     notification: {
+      deleteMany: jest.fn(async () => ({ count: 3 })),
       createMany: jest.fn(
         async ({
           data,
@@ -57,7 +58,7 @@ function envelope<T extends EventType>(type: T, data: unknown): EventEnvelope {
 describe('NotificationsConsumer', () => {
   it('registra um handler por evento da jornada', () => {
     const { handlers, consumer } = setup();
-    expect(handlers.size).toBe(12);
+    expect(handlers.size).toBe(13);
     const names = consumer.on.mock.calls.map((call) => call[1]);
     expect(new Set(names).size).toBe(names.length);
   });
@@ -137,5 +138,20 @@ describe('NotificationsConsumer', () => {
       ),
     ).rejects.toThrow('identity fora');
     expect(tx.notification.createMany).not.toHaveBeenCalled();
+  });
+
+  it('conta excluída: apaga as notificações da pessoa', async () => {
+    const { handlers, tx } = setup();
+    await handlers.get('identity.user.deleted')!(
+      {
+        id: '00000000-0000-4000-8000-000000000099',
+        type: 'identity.user.deleted',
+        source: 'identity-service',
+        occurredAt: '2026-10-19T12:00:00Z',
+        data: { userId: 'u1', occurredAt: '2026-10-19T12:00:00Z' },
+      },
+      tx,
+    );
+    expect(tx.notification.deleteMany).toHaveBeenCalledWith({ where: { userId: 'u1' } });
   });
 });

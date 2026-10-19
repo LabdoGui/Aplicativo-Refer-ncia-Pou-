@@ -114,9 +114,7 @@ describe('dayAvailability', () => {
   const generated = slotsForDay([rule()], MONDAY, ZONE);
 
   it('desconta reservas, remove bloqueadas e horários antes da antecedência mínima', () => {
-    const usage = new Map([
-      [new Date('2026-10-19T11:30:00Z').getTime(), { capacity: 3, bookedCount: 3 }],
-    ]);
+    const usage = new Map([[new Date('2026-10-19T11:30:00Z').getTime(), { bookedCount: 3 }]]);
     const result = dayAvailability({
       generated,
       blocks: [
@@ -131,10 +129,16 @@ describe('dayAvailability', () => {
     ]);
   });
 
-  it('usa a capacidade gravada na vaga quando ela já existe', () => {
-    const usage = new Map([[generated[0].startsAt.getTime(), { capacity: 5, bookedCount: 1 }]]);
+  it('usa a capacidade da regra vigente, mesmo que a vaga já tenha reservas', () => {
+    const usage = new Map([[generated[0].startsAt.getTime(), { bookedCount: 1 }]]);
     const [first] = dayAvailability({ generated, blocks: [], usage, earliest: new Date(0) });
-    expect(first).toMatchObject({ capacity: 5, remaining: 4 });
+    expect(first).toMatchObject({ capacity: 3, remaining: 2 });
+  });
+
+  it('capacidade reduzida abaixo das reservas feitas: vaga lotada, sem número negativo', () => {
+    const usage = new Map([[generated[0].startsAt.getTime(), { bookedCount: 5 }]]);
+    const [first] = dayAvailability({ generated, blocks: [], usage, earliest: new Date(0) });
+    expect(first).toMatchObject({ capacity: 3, remaining: 0 });
   });
 });
 

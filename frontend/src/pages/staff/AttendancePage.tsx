@@ -15,6 +15,7 @@ import { DonorHeader } from '@/features/staff/DonorHeader';
 import { ScreeningForm } from '@/features/staff/ScreeningForm';
 import { SharedPreScreeningPanel } from '@/features/staff/SharedPreScreeningPanel';
 import { isApiError } from '@/lib/api';
+import { todayIso, toIsoDate } from '@/lib/format';
 import { useDocumentTitle } from '@/lib/use-document-title';
 
 /** Atendimento: check-in (recepção) e triagem e doação (enfermagem). */
@@ -32,6 +33,13 @@ export function AttendancePage() {
   const checkIn = useCheckIn();
 
   const notFound = isApiError(appointment.error) && appointment.error.status === 404;
+  // A pré-triagem compartilhada só é liberada com o atendimento em aberto (regra da API).
+  const preScreeningOpen =
+    !attendance.data?.completed &&
+    (status === 'CHECKED_IN' ||
+      ((status === 'BOOKED' || status === 'CONFIRMED') &&
+        appointment.data !== undefined &&
+        toIsoDate(appointment.data.startsAt) === todayIso()));
 
   return (
     <>
@@ -73,7 +81,7 @@ export function AttendancePage() {
                   </Alert>
                 ) : (
                   <>
-                    <SharedPreScreeningPanel appointmentId={appointmentId} />
+                    {preScreeningOpen && <SharedPreScreeningPanel appointmentId={appointmentId} />}
                     <QueryState
                       isLoading={attendance.isLoading || fields.isLoading}
                       error={attendance.error ?? fields.error}

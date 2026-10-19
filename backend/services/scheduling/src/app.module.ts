@@ -15,10 +15,12 @@ import { AgendaService } from './agenda/agenda.service';
 import { AppointmentsController } from './appointments/appointments.controller';
 import { AppointmentsService } from './appointments/appointments.service';
 import { AvailabilityService } from './appointments/availability.service';
+import { StaleAppointmentsService } from './appointments/stale-appointments.service';
 import { CampaignsController } from './campaigns/campaigns.controller';
 import { CampaignsService } from './campaigns/campaigns.service';
 import { envSchema } from './config';
 import { AttendanceCompletedHandler } from './events/attendance-completed.handler';
+import { UserDeletedHandler } from './events/user-deleted.handler';
 import { DonorDirectory } from './identity/donor-directory';
 import { InternalController } from './internal/internal.controller';
 import { PrismaModule } from './prisma/prisma.module';
@@ -53,7 +55,9 @@ import { UnitsService } from './units/units.service';
     CampaignsService,
     DonorDirectory,
     AttendanceCompletedHandler,
+    UserDeletedHandler,
     ReminderJob,
+    StaleAppointmentsService,
     SeedService,
   ],
 })

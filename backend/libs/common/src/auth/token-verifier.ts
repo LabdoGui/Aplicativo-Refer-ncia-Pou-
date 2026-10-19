@@ -20,6 +20,7 @@ export function claimsToUser(payload: JWTPayload): AuthUser {
     role,
     name: typeof payload.name === 'string' ? payload.name : '',
     unitIds: Array.isArray(payload.unitIds) ? (payload.unitIds as string[]) : [],
+    ...(typeof payload.sid === 'string' ? { sessionId: payload.sid } : {}),
   };
 }
 

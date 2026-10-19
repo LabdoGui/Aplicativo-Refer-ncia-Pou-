@@ -174,35 +174,9 @@ export class AuthService {
       throw INVALID_CREDENTIALS();
     }
 
-    const now = new Date();
-    if (user.lockedUntil && user.lockedUntil > now) {
-      const minutes = Math.ceil((user.lockedUntil.getTime() - now.getTime()) / 60_000);
-      throw new AppException(
-        429,
-        'ACCOUNT_LOCKED',
-        `Muitas tentativas com senha incorreta. Tente novamente em ${minutes} minuto(s).`,
-      );
-    }
-
+    this.assertNotLocked(user);
     if (!(await this.passwords.verify(user.passwordHash, dto.password))) {
-      const attempts = user.failedLoginAttempts + 1;
-      const lock = attempts >= MAX_FAILED_LOGINS;
-      await this.prisma.user.update({
-        where: { id: user.id },
-        data: {
-          failedLoginAttempts: lock ? 0 : attempts,
-          lockedUntil: lock ? new Date(now.getTime() + LOCK_MINUTES * 60_000) : null,
-        },
-      });
-      if (lock) {
-        await this.audit.record({
-          actor: null,
-          action: 'auth.account_locked',
-          entity: 'user',
-          entityId: user.id,
-          requestId: context.requestId,
-        });
-      }
+      await this.registerFailedPassword(user.id, context.requestId);
       throw INVALID_CREDENTIALS();
     }
 
@@ -216,7 +190,7 @@ export class AuthService {
 
     await this.prisma.user.update({
       where: { id: user.id },
-      data: { failedLoginAttempts: 0, lockedUntil: null, lastLoginAt: now },
+      data: { failedLoginAttempts: 0, lockedUntil: null, lastLoginAt: new Date() },
     });
     await this.audit.record({
       actor: { id: user.id, role: user.role },
@@ -300,6 +274,48 @@ export class AuthService {
     });
   }
 
+  /** Recusa a conferência de senha enquanto a conta está bloqueada por tentativas erradas. */
+  assertNotLocked(user: Pick<User, 'lockedUntil'>): void {
+    const now = Date.now();
+    if (user.lockedUntil && user.lockedUntil.getTime() > now) {
+      const minutes = Math.ceil((user.lockedUntil.getTime() - now) / 60_000);
+      throw new AppException(
+        429,
+        'ACCOUNT_LOCKED',
+        `Muitas tentativas com senha incorreta. Tente novamente em ${minutes} minuto(s).`,
+      );
+    }
+  }
+
+  /**
+   * Conta uma senha errada (login, troca de senha ou exclusão da conta). O
+   * incremento é atômico: tentativas simultâneas não se perdem, e só a que
+   * atinge o limite bloqueia a conta e registra o bloqueio.
+   */
+  async registerFailedPassword(userId: string, requestId?: string): Promise<void> {
+    const { failedLoginAttempts } = await this.prisma.user.update({
+      where: { id: userId },
+      data: { failedLoginAttempts: { increment: 1 } },
+      select: { failedLoginAttempts: true },
+    });
+    if (failedLoginAttempts < MAX_FAILED_LOGINS) return;
+    const { count } = await this.prisma.user.updateMany({
+      where: { id: userId, failedLoginAttempts: { gte: MAX_FAILED_LOGINS } },
+      data: {
+        failedLoginAttempts: 0,
+        lockedUntil: new Date(Date.now() + LOCK_MINUTES * 60_000),
+      },
+    });
+    if (count === 0) return;
+    await this.audit.record({
+      actor: null,
+      action: 'auth.account_locked',
+      entity: 'user',
+      entityId: userId,
+      requestId,
+    });
+  }
+
   /** Revoga todas as sessões do usuário, menos (opcionalmente) a família informada. */
   async revokeAllSessions(userId: string, exceptFamilyId?: string): Promise<void> {
     await this.prisma.refreshToken.updateMany({
@@ -360,7 +376,7 @@ export class AuthService {
     });
     return {
       session: {
-        accessToken: await this.tokens.signAccessToken(sessionUser),
+        accessToken: await this.tokens.signAccessToken(sessionUser, familyId),
         expiresIn: this.tokens.accessTokenTtlSeconds,
         user: sessionUser,
       },

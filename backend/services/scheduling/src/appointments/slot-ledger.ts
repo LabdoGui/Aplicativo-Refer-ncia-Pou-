@@ -5,7 +5,9 @@ import type { GeneratedSlot } from '../domain/schedule';
 
 /**
  * Reserva uma vaga de forma atômica (RN01). A vaga é materializada na primeira
- * reserva; o UPDATE condicional só incrementa se ainda houver lugar. Com
+ * reserva e, nas seguintes, a capacidade acompanha a regra vigente da unidade
+ * (nunca abaixo das reservas já feitas, que continuam válidas). O UPDATE
+ * condicional só incrementa se ainda houver lugar. Com
  * reservas simultâneas, o PostgreSQL serializa no bloqueio da linha e reavalia
  * a condição, então a capacidade nunca é ultrapassada (o CHECK da tabela é a
  * última barreira).
@@ -18,7 +20,8 @@ export async function reserveSlot(
   await tx.$executeRawUnsafe(
     `INSERT INTO "slots" ("id", "unitId", "startsAt", "endsAt", "capacity", "bookedCount")
      VALUES ($1::uuid, $2::uuid, $3::timestamptz, $4::timestamptz, $5, 0)
-     ON CONFLICT ("unitId", "startsAt") DO NOTHING`,
+     ON CONFLICT ("unitId", "startsAt")
+     DO UPDATE SET "capacity" = GREATEST("slots"."bookedCount", EXCLUDED."capacity")`,
     randomUUID(),
     unitId,
     slot.startsAt.toISOString(),

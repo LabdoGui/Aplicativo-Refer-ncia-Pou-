@@ -5,7 +5,11 @@ import type { IdentityEnv } from '../config';
 import { PasswordService } from '../auth/password.service';
 import { PrismaService } from '../prisma/prisma.service';
 
-/** Grava as contas fictícias de demonstração quando o banco está vazio (SEED_DEMO_DATA=true). */
+/**
+ * Grava as contas fictícias de demonstração quando o banco está vazio
+ * (SEED_DEMO_DATA=true). Sem demonstração, cria o primeiro administrador a
+ * partir de BOOTSTRAP_ADMIN_EMAIL/BOOTSTRAP_ADMIN_PASSWORD, se informados.
+ */
 @Injectable()
 export class SeedService implements OnApplicationBootstrap {
   private readonly logger = new Logger(SeedService.name);
@@ -18,7 +22,10 @@ export class SeedService implements OnApplicationBootstrap {
   ) {}
 
   async onApplicationBootstrap(): Promise<void> {
-    if (!this.config.SEED_DEMO_DATA) return;
+    if (!this.config.SEED_DEMO_DATA) {
+      await this.bootstrapAdmin();
+      return;
+    }
     if ((await this.prisma.user.count()) > 0) return;
     const dataset = buildSeedDataset();
     // Mesmo hash para todas as contas de demonstração (mesma senha, documentada no README).
@@ -76,5 +83,27 @@ export class SeedService implements OnApplicationBootstrap {
       { timeout: 60_000 },
     );
     this.logger.log({ users: dataset.users.length }, 'Dados fictícios de demonstração gravados');
+  }
+
+  private async bootstrapAdmin(): Promise<void> {
+    const { BOOTSTRAP_ADMIN_EMAIL: email, BOOTSTRAP_ADMIN_PASSWORD: password } = this.config;
+    if (!email || !password) return;
+    if ((await this.prisma.user.count({ where: { role: 'ADMIN' } })) > 0) return;
+    const now = new Date();
+    await this.prisma.user.create({
+      data: {
+        email,
+        name: 'Administração',
+        role: 'ADMIN',
+        passwordHash: await this.passwords.hash(password),
+        professionalProfile: { create: { unitIds: [] } },
+        consents: {
+          create: [
+            { purpose: 'TERMS_PRIVACY', granted: true, version: TERMS_VERSION, grantedAt: now },
+          ],
+        },
+      },
+    });
+    this.logger.log('Primeiro administrador criado (BOOTSTRAP_ADMIN_EMAIL)');
   }
 }

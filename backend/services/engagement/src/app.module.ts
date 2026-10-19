@@ -23,6 +23,7 @@ import { HoursService } from './hours/hours.service';
 import { IdentityClient } from './identity/identity.client';
 import { InternalController } from './internal/internal.controller';
 import { PrismaModule } from './prisma/prisma.module';
+import { UserDeletedHandler } from './privacy/user-deleted.handler';
 import { ProgressConsumer } from './progress/progress.consumer';
 import { ProgressService } from './progress/progress.service';
 import { SeedService } from './seed/seed.service';
@@ -48,6 +49,7 @@ import { SeedService } from './seed/seed.service';
     SettingsService,
     ProgressService,
     ProgressConsumer,
+    UserDeletedHandler,
     GamificationService,
     HoursService,
     AdminHoursService,

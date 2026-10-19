@@ -16,6 +16,7 @@ function makeService(stock: { quantity: number; minimum: number; ideal: number }
     bloodStock: { update: jest.fn(async () => ({})) as Mock },
     stockMovement: {
       findMany: jest.fn(async () => []) as Mock,
+      updateMany: jest.fn(async () => ({ count: 0 })) as Mock,
       create: jest.fn(async ({ data }: { data: Record<string, unknown> }) => ({
         id: 'mov-1',
         createdAt: new Date('2026-10-17T12:00:00Z'),
@@ -140,5 +141,43 @@ describe('MovementsService.create', () => {
       }),
       'INSUFFICIENT_STOCK',
     );
+  });
+
+  it('entrada retroativa: saldo da data informada e posteriores ajustadas', async () => {
+    const { service, tx } = makeService({ quantity: 20, minimum: 1, ideal: 2 });
+    // Depois da data informada: entrada de 8 e saída de 3 (efeito líquido +5).
+    tx.stockMovement.findMany.mockResolvedValueOnce([
+      { type: 'OUT', quantity: 3 },
+      { type: 'IN', quantity: 8 },
+    ]);
+    const occurredAt = new Date(Date.now() - 2 * 86_400_000).toISOString();
+    const view = await service.create(actor, {
+      bloodType: 'O_NEG',
+      type: 'IN',
+      quantity: 4,
+      reason: 'PROCESSED_COLLECTION',
+      occurredAt,
+    });
+    // Na data, o saldo era 20 − 5 = 15; com a entrada, 19.
+    expect(view.balanceAfter).toBe(19);
+    expect(tx.bloodStock.update).toHaveBeenCalledWith({
+      where: { bloodType: 'O_NEG' },
+      data: { quantity: 24 },
+    });
+    expect(tx.stockMovement.updateMany).toHaveBeenCalledWith({
+      where: { bloodType: 'O_NEG', occurredAt: { gt: new Date(occurredAt) } },
+      data: { balanceAfter: { increment: 4 } },
+    });
+  });
+
+  it('sem movimentações posteriores, nada é ajustado', async () => {
+    const { service, tx } = makeService({ quantity: 20, minimum: 1, ideal: 2 });
+    await service.create(actor, {
+      bloodType: 'O_NEG',
+      type: 'OUT',
+      quantity: 2,
+      reason: 'HOSPITAL_DISTRIBUTION',
+    });
+    expect(tx.stockMovement.updateMany).not.toHaveBeenCalled();
   });
 });

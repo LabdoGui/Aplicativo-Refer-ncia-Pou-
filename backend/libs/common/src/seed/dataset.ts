@@ -554,6 +554,7 @@ export function buildSeedDataset(today: string = todayLocal()): SeedDataset {
     return day;
   };
 
+  const registeredAtById = new Map(donors.map((donor) => [donor.id, donor.createdAt]));
   const pushAppointment = (
     key: string,
     donorId: string,
@@ -562,6 +563,11 @@ export function buildSeedDataset(today: string = todayLocal()): SeedDataset {
     status: AppointmentStatus,
     campaignId: string | null,
   ): SeedAppointment => {
+    // Feito de 2 a 12 dias antes, mas nunca antes do cadastro do doador.
+    const bookedAt = iso(
+      startsAt.minus({ days: random.int(2, 12) }).set({ hour: random.int(8, 22) }),
+    );
+    const registeredAt = registeredAtById.get(donorId) ?? bookedAt;
     const appointment: SeedAppointment = {
       id: seedUuid(`appointment:${key}`),
       code: random.code('AG'),
@@ -571,7 +577,7 @@ export function buildSeedDataset(today: string = todayLocal()): SeedDataset {
       endsAt: iso(startsAt.plus({ minutes: 30 })),
       status,
       campaignId,
-      createdAt: iso(startsAt.minus({ days: random.int(2, 12) }).set({ hour: random.int(8, 22) })),
+      createdAt: bookedAt > registeredAt ? bookedAt : registeredAt,
       cancelledAt: null,
       cancelledBy: null,
       checkedInAt: null,
@@ -655,7 +661,11 @@ export function buildSeedDataset(today: string = todayLocal()): SeedDataset {
   for (let index = 0; index < 24; index++) {
     const donor = random.pick(pastPool);
     const unitId = random.pick(SEED_UNITS).id;
-    const day = nextServiceDay(unitId, todayDate.minus({ days: random.int(3, 300) }));
+    // O agendamento é feito até 12 dias antes: o dia fica depois do cadastro do doador.
+    const registeredAt = DateTime.fromISO(donor.createdAt).setZone(ZONE);
+    const maxDaysAgo = Math.min(300, Math.floor(todayDate.diff(registeredAt, 'days').days) - 13);
+    if (maxDaysAgo < 3) continue;
+    const day = nextServiceDay(unitId, todayDate.minus({ days: random.int(3, maxDaysAgo) }));
     if (day >= todayDate) continue;
     const startsAt = localDateTime(
       day.toISODate()!,
@@ -671,7 +681,9 @@ export function buildSeedDataset(today: string = todayLocal()): SeedDataset {
       null,
     );
     if (!noShow) {
-      appointment.cancelledAt = iso(startsAt.minus({ hours: random.int(3, 72) }));
+      const cancelledAt = iso(startsAt.minus({ hours: random.int(3, 72) }));
+      appointment.cancelledAt =
+        cancelledAt > appointment.createdAt ? cancelledAt : appointment.createdAt;
       appointment.cancelledBy = random.chance(0.85) ? 'DONOR' : 'STAFF';
     }
   }

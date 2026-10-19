@@ -74,6 +74,9 @@ export type RateLimitBucket = 'auth' | 'default' | 'exempt';
 /** Rotas de credencial, com limite mais baixo (força bruta, criação de contas em massa). */
 const AUTH_ACTIONS = new Set(['login', 'register', 'refresh']);
 
+/** Rotas da conta que conferem a senha atual: entram no mesmo limite das de credencial. */
+const PASSWORD_CHECKS = new Set(['PATCH api/v1/users/me/password', 'DELETE api/v1/users/me']);
+
 /** Decide em qual limite a requisição entra. */
 export function classifyRateLimit(method: string, pathname: string): RateLimitBucket {
   const segments = splitPath(pathname);
@@ -86,5 +89,6 @@ export function classifyRateLimit(method: string, pathname: string): RateLimitBu
     segments[1] === 'v1' &&
     segments[2] === 'auth' &&
     AUTH_ACTIONS.has(segments[3]);
-  return isAuthAction ? 'auth' : 'default';
+  const checksPassword = PASSWORD_CHECKS.has(`${method.toUpperCase()} ${segments.join('/')}`);
+  return isAuthAction || checksPassword ? 'auth' : 'default';
 }

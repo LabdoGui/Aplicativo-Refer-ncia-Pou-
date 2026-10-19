@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { randomBytes } from 'node:crypto';
-import { AppException, AuditService, FieldEncryption } from '@pulso/common';
+import { AppException, AuditService, FieldEncryption, OutboxService } from '@pulso/common';
 import {
   CONSENT_PURPOSES,
+  EVENTS,
   TERMS_VERSION,
   type AuthUser,
   type ConsentView,
@@ -29,6 +30,7 @@ export class AccountService {
     private readonly passwords: PasswordService,
     private readonly auth: AuthService,
     private readonly audit: AuditService,
+    private readonly outbox: OutboxService,
   ) {}
 
   async me(userId: string): Promise<MeResponse> {
@@ -85,7 +87,9 @@ export class AccountService {
     requestId?: string,
   ): Promise<void> {
     const user = await this.load(actor.id);
+    this.auth.assertNotLocked(user);
     if (!(await this.passwords.verify(user.passwordHash, dto.currentPassword))) {
+      await this.auth.registerFailedPassword(user.id, requestId);
       throw new AppException(422, 'WRONG_PASSWORD', 'A senha atual não confere.', undefined, [
         { field: 'currentPassword', message: 'A senha atual não confere.' },
       ]);
@@ -101,10 +105,16 @@ export class AccountService {
     }
     await this.prisma.user.update({
       where: { id: user.id },
-      data: { passwordHash: await this.passwords.hash(dto.newPassword) },
+      data: {
+        passwordHash: await this.passwords.hash(dto.newPassword),
+        failedLoginAttempts: 0,
+        lockedUntil: null,
+      },
     });
-    // Outros dispositivos saem; o atual continua conectado.
-    await this.auth.revokeAllSessions(user.id, await this.auth.familyOf(currentRefreshToken));
+    // Outros dispositivos saem; o atual continua conectado. O cookie de refresh só
+    // vai para /auth, então a sessão atual vem do access token (claim sid).
+    const currentSession = actor.sessionId ?? (await this.auth.familyOf(currentRefreshToken));
+    await this.auth.revokeAllSessions(user.id, currentSession);
     await this.audit.record({
       actor,
       action: 'user.password_changed',
@@ -195,13 +205,17 @@ export class AccountService {
 
   /**
    * Exclusão da conta: os dados de identificação são apagados e a conta fica
-   * anonimizada. Registros de atendimento e doação (outros serviços) ficam
-   * pseudonimizados, ligados apenas ao identificador, por obrigação de guarda
-   * da instituição de saúde.
+   * anonimizada. O evento identity.user.deleted leva a exclusão aos outros
+   * serviços: agendamentos em aberto são cancelados, respostas da pré-triagem,
+   * notificações e presença no ranking são apagadas. Registros de atendimento e
+   * doação ficam pseudonimizados, ligados apenas ao identificador, por
+   * obrigação de guarda da instituição de saúde.
    */
   async deleteAccount(actor: AuthUser, password: string, requestId?: string): Promise<void> {
     const user = await this.load(actor.id);
+    this.auth.assertNotLocked(user);
     if (!(await this.passwords.verify(user.passwordHash, password))) {
+      await this.auth.registerFailedPassword(user.id, requestId);
       throw new AppException(422, 'WRONG_PASSWORD', 'A senha não confere.', undefined, [
         { field: 'password', message: 'A senha não confere.' },
       ]);
@@ -229,6 +243,13 @@ export class AccountService {
           lockedUntil: null,
         },
       });
+      // Os outros serviços apagam ou desvinculam o que guardam desta pessoa.
+      await this.outbox.enqueue(
+        tx,
+        EVENTS.USER_DELETED,
+        { userId: user.id, occurredAt: new Date().toISOString() },
+        requestId,
+      );
       await this.audit.record(
         { actor, action: 'user.account_deleted', entity: 'user', entityId: user.id, requestId },
         tx,

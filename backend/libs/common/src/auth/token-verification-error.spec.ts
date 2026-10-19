@@ -202,4 +202,15 @@ describe('verificadores reais (jose) e a classificação dos erros', () => {
     expect(error).toBeInstanceOf(TokenVerificationError);
     expect(classifyVerificationError(error)).toBe('invalid');
   });
+
+  it('claim sid vira sessionId (troca de senha mantém a sessão atual)', () => {
+    expect(claimsToUser({ sub: 'u-1', role: 'DONOR', name: 'Ana', sid: 'familia-1' })).toEqual({
+      id: 'u-1',
+      role: 'DONOR',
+      name: 'Ana',
+      unitIds: [],
+      sessionId: 'familia-1',
+    });
+    expect(claimsToUser({ sub: 'u-1', role: 'DONOR' })).not.toHaveProperty('sessionId');
+  });
 });

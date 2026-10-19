@@ -15,6 +15,7 @@ import { DonationsModule } from './donations/donations.module';
 import { InternalController } from './internal/internal.controller';
 import { PreScreeningModule } from './pre-screening/pre-screening.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { UserDeletedHandler } from './privacy/user-deleted.handler';
 import { SchedulingClientModule } from './scheduling/scheduling.module';
 import { ScreeningConfigModule } from './screening-config/screening-config.module';
 import { SeedService } from './seed/seed.service';
@@ -37,6 +38,6 @@ import { SettingsModule } from './settings/settings.module';
     ScreeningConfigModule,
   ],
   controllers: [InternalController],
-  providers: [SeedService],
+  providers: [SeedService, UserDeletedHandler],
 })
 export class AppModule {}

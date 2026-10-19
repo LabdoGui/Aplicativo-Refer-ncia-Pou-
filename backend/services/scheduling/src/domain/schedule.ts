@@ -110,14 +110,14 @@ export function isActiveStatus(status: AppointmentStatus): boolean {
 }
 
 export interface SlotUsage {
-  capacity: number;
   bookedCount: number;
 }
 
 /**
  * Disponibilidade de um dia: vagas da grade a partir de `earliest`, sem as
- * bloqueadas, com as vagas restantes de cada uma. Vagas lotadas continuam na
- * lista (remaining = 0) para a interface mostrar "lotado".
+ * bloqueadas, com as vagas restantes de cada uma. A capacidade é a da regra
+ * vigente (a mesma que a reserva aplica). Vagas lotadas continuam na lista
+ * (remaining = 0) para a interface mostrar "lotado".
  */
 export function dayAvailability(params: {
   generated: GeneratedSlot[];
@@ -128,13 +128,12 @@ export function dayAvailability(params: {
   return params.generated
     .filter((slot) => slot.startsAt >= params.earliest && !isBlocked(slot, params.blocks))
     .map((slot) => {
-      const used = params.usage.get(slot.startsAt.getTime());
-      const capacity = used?.capacity ?? slot.capacity;
+      const booked = params.usage.get(slot.startsAt.getTime())?.bookedCount ?? 0;
       return {
         startsAt: slot.startsAt.toISOString(),
         endsAt: slot.endsAt.toISOString(),
-        capacity,
-        remaining: Math.max(0, capacity - (used?.bookedCount ?? 0)),
+        capacity: slot.capacity,
+        remaining: Math.max(0, slot.capacity - booked),
       };
     });
 }

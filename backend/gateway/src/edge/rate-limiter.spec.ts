@@ -72,6 +72,8 @@ describe('classifyRateLimit', () => {
     ['POST', '/api/v1/auth/refresh'],
     ['post', '/api/v1/auth/login/'],
     ['POST', '/API/V1/Auth//Login'],
+    ['PATCH', '/api/v1/users/me/password'],
+    ['DELETE', '/api/v1/users/me'],
   ])('%s %s → auth', (method, path) => {
     expect(classifyRateLimit(method, path)).toBe('auth');
   });
@@ -83,6 +85,8 @@ describe('classifyRateLimit', () => {
     ['GET', '/api/v1/health/services'],
     ['GET', '/api/docs'],
     ['GET', '/api/v1/users/%E0%A4%A'],
+    ['GET', '/api/v1/users/me'],
+    ['PATCH', '/api/v1/users/me'],
   ])('%s %s → default', (method, path) => {
     expect(classifyRateLimit(method, path)).toBe('default');
   });

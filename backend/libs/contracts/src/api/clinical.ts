@@ -77,13 +77,15 @@ export interface PreScreeningResultView {
   expired: boolean;
 }
 
-/** Pré-triagem compartilhada, vista pelo enfermeiro (acesso auditado). */
+/**
+ * Pré-triagem compartilhada, vista pelo enfermeiro (acesso auditado). Só a mais
+ * recente do doador, ainda válida e enquanto o atendimento está em aberto.
+ */
 export interface SharedPreScreeningView {
   id: string;
   result: PreScreeningResult;
   createdAt: string;
   expiresAt: string;
-  expired: boolean;
   guidance: PreScreeningGuidance[];
   answers: Array<{ step: number; question: string; answer: string }>;
 }

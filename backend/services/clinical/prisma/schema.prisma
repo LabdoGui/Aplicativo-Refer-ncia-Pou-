@@ -300,3 +300,14 @@ model OutboxEvent {
   @@index([publishedAt, occurredAt])
   @@map("outbox_events")
 }
+
+/// Idempotência do consumidor: (evento, handler) já tratados.
+model ProcessedEvent {
+  eventId     String   @db.Uuid
+  consumer    String
+  eventType   String
+  processedAt DateTime @default(now()) @db.Timestamptz(3)
+
+  @@id([eventId, consumer])
+  @@map("processed_events")
+}

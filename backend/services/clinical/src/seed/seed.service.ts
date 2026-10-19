@@ -23,8 +23,9 @@ function pseudo(key: string, min: number, max: number, decimals = 0): number {
 }
 
 /**
- * Grava o questionário, os campos, as configurações e o histórico fictício de
- * atendimentos e doações quando o banco está vazio (SEED_DEMO_DATA=true).
+ * Banco vazio: grava sempre o questionário base, os campos da triagem e as
+ * configurações (sem eles a pré-triagem e a triagem não funcionam) e, com
+ * SEED_DEMO_DATA=true, o histórico fictício de atendimentos e doações.
  */
 @Injectable()
 export class SeedService implements OnApplicationBootstrap {
@@ -37,8 +38,8 @@ export class SeedService implements OnApplicationBootstrap {
   ) {}
 
   async onApplicationBootstrap(): Promise<void> {
-    if (!this.config.SEED_DEMO_DATA) return;
     if ((await this.prisma.screeningRuleSet.count()) > 0) return;
+    const demo = this.config.SEED_DEMO_DATA;
     const dataset = buildSeedDataset();
     await this.prisma.$transaction(
       async (tx) => {
@@ -116,13 +117,15 @@ export class SeedService implements OnApplicationBootstrap {
           })),
         });
 
-        await this.seedHistory(tx, dataset);
+        if (demo) await this.seedHistory(tx, dataset);
       },
       { timeout: 120_000 },
     );
     this.logger.log(
-      { attendances: dataset.attendances.length },
-      'Dados fictícios de demonstração gravados',
+      { attendances: demo ? dataset.attendances.length : 0 },
+      demo
+        ? 'Questionário base e dados fictícios de demonstração gravados'
+        : 'Questionário base e campos da triagem gravados',
     );
   }
 

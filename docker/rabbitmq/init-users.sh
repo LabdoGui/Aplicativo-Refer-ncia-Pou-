@@ -6,8 +6,8 @@
 #
 # Cada serviço <nome>:
 #   - configure/read/write só no exchange pulso.events e nas próprias filas
-#     (pulso.<nome>-service, .retry e .dlq); write também no exchange padrão
-#     (amq.default), usado para reenviar mensagens à fila de retry e à DLQ;
+#     (pulso.<nome>-service, .retry.<espera> e .dlq); write também no exchange
+#     padrão (amq.default), usado para reenviar mensagens às filas de retry e à DLQ;
 #   - topic permission: só publica routing keys que começam com "<nome>.".
 # O usuário administrador (RABBITMQ_DEFAULT_USER) fica só para a interface de gestão.
 set -eu
@@ -22,7 +22,7 @@ apply_user() {
   password="$2"
   publish_prefix="$3"
   user="${name}_svc"
-  queues="pulso\\.${name}-service(\\.retry|\\.dlq)?"
+  queues="pulso\\.${name}-service(\\.retry\\.[0-9]+[sm]|\\.dlq)?"
   if rabbitmqctl -q list_users | cut -f1 | grep -qx "$user"; then
     rabbitmqctl -q change_password "$user" "$password"
   else

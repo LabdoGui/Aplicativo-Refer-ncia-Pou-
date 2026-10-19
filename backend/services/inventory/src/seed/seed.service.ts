@@ -1,12 +1,18 @@
 import { Inject, Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { APP_CONFIG, buildSeedDataset, SEED_IDS } from '@pulso/common';
+import { BLOOD_TYPES } from '@pulso/contracts';
 import type { InventoryEnv } from '../config';
 import { PrismaService } from '../prisma/prisma.service';
 
 /** Nome do administrador fictício que registrou o histórico de demonstração. */
 const SEED_RESPONSIBLE_NAME = 'Ana Paula Ribeiro';
 
-/** Grava o estoque fictício e 90 dias de movimentações quando o banco está vazio (SEED_DEMO_DATA=true). */
+/**
+ * Grava o estoque fictício e 90 dias de movimentações quando o banco está vazio
+ * (SEED_DEMO_DATA=true). Com ou sem demonstração, garante uma linha de estoque
+ * por tipo sanguíneo: zerada e com limites provisórios (1 bolsa), aparece como
+ * crítica até a administração lançar entradas e configurar os limites.
+ */
 @Injectable()
 export class SeedService implements OnApplicationBootstrap {
   private readonly logger = new Logger(SeedService.name);
@@ -17,8 +23,17 @@ export class SeedService implements OnApplicationBootstrap {
   ) {}
 
   async onApplicationBootstrap(): Promise<void> {
-    if (!this.config.SEED_DEMO_DATA) return;
-    if ((await this.prisma.bloodStock.count()) > 0) return;
+    if (this.config.SEED_DEMO_DATA && (await this.prisma.bloodStock.count()) === 0) {
+      await this.seedDemo();
+    }
+    const { count } = await this.prisma.bloodStock.createMany({
+      data: BLOOD_TYPES.map((bloodType) => ({ bloodType, quantity: 0, minimum: 1, ideal: 1 })),
+      skipDuplicates: true,
+    });
+    if (count > 0) this.logger.log({ count }, 'Estoque inicial criado para os tipos sanguíneos');
+  }
+
+  private async seedDemo(): Promise<void> {
     const dataset = buildSeedDataset();
     const { movements } = dataset;
 

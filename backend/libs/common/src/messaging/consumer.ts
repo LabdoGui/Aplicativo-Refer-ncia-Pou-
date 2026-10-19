@@ -12,10 +12,14 @@ import type { RawSqlExecutor, TransactionalClient } from '../prisma/raw-client';
 import { PRISMA_CLIENT, SERVICE_NAME } from '../tokens';
 import { BrokerConnection } from './broker';
 
+/**
+ * Espera antes de cada nova tentativa, em escada (10 s, 1 min, 5 min, 30 min):
+ * uma indisponibilidade de até ~36 minutos se resolve sozinha. Cada degrau é
+ * uma fila de retry com TTL próprio, então uma espera longa não atrasa as curtas.
+ */
+export const CONSUMER_RETRY_DELAYS_MS = [10_000, 60_000, 300_000, 1_800_000] as const;
 /** Tentativas de um evento antes de ir para a fila de mensagens mortas (DLQ). */
-export const CONSUMER_MAX_ATTEMPTS = 5;
-/** Espera entre tentativas (TTL da fila de retry). */
-export const CONSUMER_RETRY_DELAY_MS = 10_000;
+export const CONSUMER_MAX_ATTEMPTS = CONSUMER_RETRY_DELAYS_MS.length + 1;
 export const CONSUMER_PREFETCH = 10;
 export const ATTEMPT_HEADER = 'x-pulso-attempt';
 
@@ -33,9 +37,21 @@ interface RegisteredHandler {
   handle: EventHandler<EventType, unknown>;
 }
 
+function delayLabel(ms: number): string {
+  return ms % 60_000 === 0 ? `${ms / 60_000}m` : `${ms / 1000}s`;
+}
+
+/** Filas do serviço: principal, uma de retry por degrau de espera e a DLQ. */
 export function queueNames(serviceName: string) {
   const main = `pulso.${serviceName}`;
-  return { main, retry: `${main}.retry`, dead: `${main}.dlq` };
+  return {
+    main,
+    retries: CONSUMER_RETRY_DELAYS_MS.map((ms) => ({
+      name: `${main}.retry.${delayLabel(ms)}`,
+      delayMs: ms,
+    })),
+    dead: `${main}.dlq`,
+  };
 }
 
 function isEnvelope(value: unknown): value is EventEnvelope {
@@ -93,7 +109,7 @@ export class EventConsumer implements OnApplicationBootstrap, OnApplicationShutd
 
   onApplicationBootstrap(): void {
     if (this.handlers.size === 0) return;
-    const { main, retry, dead } = this.queues;
+    const { main, retries, dead } = this.queues;
     const routingKeys = [...this.handlers.keys()];
 
     this.channel = this.broker.getConnection().createChannel({
@@ -103,15 +119,17 @@ export class EventConsumer implements OnApplicationBootstrap, OnApplicationShutd
         await channel.assertExchange(EVENT_EXCHANGE, 'topic', { durable: true });
         await channel.assertQueue(main, { durable: true });
         await channel.assertQueue(dead, { durable: true });
-        // Mensagens na fila de retry voltam para a principal depois do TTL.
-        await channel.assertQueue(retry, {
-          durable: true,
-          arguments: {
-            'x-message-ttl': CONSUMER_RETRY_DELAY_MS,
-            'x-dead-letter-exchange': '',
-            'x-dead-letter-routing-key': main,
-          },
-        });
+        // Mensagens nas filas de retry voltam para a principal depois do TTL.
+        for (const retry of retries) {
+          await channel.assertQueue(retry.name, {
+            durable: true,
+            arguments: {
+              'x-message-ttl': retry.delayMs,
+              'x-dead-letter-exchange': '',
+              'x-dead-letter-routing-key': main,
+            },
+          });
+        }
         for (const key of routingKeys) await channel.bindQueue(main, EVENT_EXCHANGE, key);
       },
     });
@@ -159,7 +177,8 @@ export class EventConsumer implements OnApplicationBootstrap, OnApplicationShutd
       try {
         if (attempt < CONSUMER_MAX_ATTEMPTS) {
           this.logger.warn(log, 'Falha ao tratar evento; nova tentativa agendada');
-          await this.sendTo(this.queues.retry, message, attempt + 1, reason);
+          const retry = this.queues.retries[Math.min(attempt, this.queues.retries.length) - 1];
+          await this.sendTo(retry.name, message, attempt + 1, reason);
         } else {
           this.logger.error(log, 'Evento enviado à DLQ depois de esgotar as tentativas');
           await this.sendTo(this.queues.dead, message, attempt, reason);

@@ -47,14 +47,11 @@ export class AvailabilityService {
       }),
       this.prisma.slot.findMany({
         where: { unitId: unit.id, startsAt: { gte: start, lte: end } },
-        select: { startsAt: true, capacity: true, bookedCount: true },
+        select: { startsAt: true, bookedCount: true },
       }),
     ]);
     const usage = new Map<number, SlotUsage>(
-      slots.map((slot) => [
-        slot.startsAt.getTime(),
-        { capacity: slot.capacity, bookedCount: slot.bookedCount },
-      ]),
+      slots.map((slot) => [slot.startsAt.getTime(), { bookedCount: slot.bookedCount }]),
     );
 
     return {

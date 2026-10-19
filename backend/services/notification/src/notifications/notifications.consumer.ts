@@ -69,6 +69,14 @@ export class NotificationsConsumer implements OnModuleInit {
       'notify-stock-alert',
       (envelope, tx) => this.handleStock(envelope, tx),
     );
+    // Conta excluída (LGPD): as notificações da pessoa são apagadas.
+    this.consumer.on<typeof EVENTS.USER_DELETED, Tx>(
+      EVENTS.USER_DELETED,
+      'erase-notifications',
+      async ({ data }, tx) => {
+        await tx.notification.deleteMany({ where: { userId: data.userId } });
+      },
+    );
   }
 
   /** Alerta de estoque para cada administrador ativo (falha no identity → nova tentativa). */

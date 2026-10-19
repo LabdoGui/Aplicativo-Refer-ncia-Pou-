@@ -96,6 +96,13 @@ export class MovementsService {
         );
       }
 
+      // Movimentações com data posterior à informada (registro retroativo).
+      const laterWhere = { bloodType: dto.bloodType, occurredAt: { gt: occurredAt } };
+      const later = await tx.stockMovement.findMany({
+        where: laterWhere,
+        select: { type: true, quantity: true },
+        orderBy: { occurredAt: 'desc' },
+      });
       if (dto.type === 'OUT') {
         if (dto.quantity > stock.quantity) {
           throw new AppException(
@@ -105,11 +112,6 @@ export class MovementsService {
           );
         }
         // Saída retroativa: o saldo não pode ter ficado negativo em nenhum momento desde então.
-        const later = await tx.stockMovement.findMany({
-          where: { bloodType: dto.bloodType, occurredAt: { gt: occurredAt } },
-          select: { type: true, quantity: true },
-          orderBy: { occurredAt: 'desc' },
-        });
         const minimum = minimumBalanceSince(stock.quantity, later);
         if (dto.quantity > minimum) {
           throw new AppException(
@@ -120,8 +122,21 @@ export class MovementsService {
         }
       }
 
-      const quantity = stock.quantity + (dto.type === 'IN' ? dto.quantity : -dto.quantity);
+      const delta = dto.type === 'IN' ? dto.quantity : -dto.quantity;
+      const quantity = stock.quantity + delta;
+      // Saldo na data informada: o atual sem o efeito das movimentações posteriores.
+      const laterNet = later.reduce(
+        (sum, item) => sum + (item.type === 'IN' ? item.quantity : -item.quantity),
+        0,
+      );
       await tx.bloodStock.update({ where: { bloodType: dto.bloodType }, data: { quantity } });
+      if (later.length > 0) {
+        // As posteriores passam a refletir esta movimentação no saldo de cada uma.
+        await tx.stockMovement.updateMany({
+          where: laterWhere,
+          data: { balanceAfter: { increment: delta } },
+        });
+      }
       const created = await tx.stockMovement.create({
         data: {
           bloodType: dto.bloodType,
@@ -132,7 +147,7 @@ export class MovementsService {
           occurredAt,
           responsibleId: actor.id,
           responsibleName: actor.name || UNKNOWN_RESPONSIBLE,
-          balanceAfter: quantity,
+          balanceAfter: stock.quantity - laterNet + delta,
         },
       });
 

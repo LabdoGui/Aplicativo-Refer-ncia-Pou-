@@ -18,6 +18,8 @@ export interface AuthUser {
   role: Role;
   name: string;
   unitIds: string[];
+  /** Sessão (família de refresh tokens) que emitiu o token. */
+  sessionId?: string;
 }
 
 /** Claims do access token emitido pelo identity-service. */
@@ -26,6 +28,8 @@ export interface AccessTokenClaims {
   role: Role;
   name: string;
   unitIds?: string[];
+  /** Id da sessão: permite encerrar as outras sessões sem derrubar a atual. */
+  sid?: string;
 }
 
 export const JWT_ISSUER = 'pulso-identity';

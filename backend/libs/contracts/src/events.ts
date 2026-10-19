@@ -12,6 +12,7 @@ export const EVENT_EXCHANGE = 'pulso.events';
 
 export const EVENTS = {
   USER_REGISTERED: 'identity.user.registered',
+  USER_DELETED: 'identity.user.deleted',
   APPOINTMENT_BOOKED: 'scheduling.appointment.booked',
   APPOINTMENT_CANCELLED: 'scheduling.appointment.cancelled',
   APPOINTMENT_RESCHEDULED: 'scheduling.appointment.rescheduled',
@@ -31,6 +32,15 @@ export interface UserRegisteredData {
   userId: string;
   name: string;
   role: Role;
+}
+
+/**
+ * Conta excluída pelo titular (LGPD). Cada serviço apaga ou desvincula os dados
+ * pessoais que guarda; registros de saúde ficam pseudonimizados (só o id).
+ */
+export interface UserDeletedData {
+  userId: string;
+  occurredAt: string;
 }
 
 export interface AppointmentBookedData {
@@ -127,6 +137,7 @@ export interface HoursReviewedData {
 
 export interface EventPayloads {
   'identity.user.registered': UserRegisteredData;
+  'identity.user.deleted': UserDeletedData;
   'scheduling.appointment.booked': AppointmentBookedData;
   'scheduling.appointment.cancelled': AppointmentCancelledData;
   'scheduling.appointment.rescheduled': AppointmentRescheduledData;

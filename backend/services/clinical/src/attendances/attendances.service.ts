@@ -5,6 +5,8 @@ import {
   FieldEncryption,
   OutboxService,
   assertUnitScope,
+  todayLocal,
+  toLocalDate,
 } from '@pulso/common';
 import {
   EVENTS,
@@ -61,7 +63,11 @@ export class AttendancesService {
     return null;
   }
 
-  /** Pré-triagem compartilhada pelo doador do agendamento (acesso auditado). */
+  /**
+   * Pré-triagem compartilhada pelo doador do agendamento (acesso auditado). Só
+   * enquanto o atendimento está em aberto: no dia do agendamento ou depois do
+   * check-in, e antes de o atendimento terminar.
+   */
   async sharedPreScreening(
     actor: AuthUser,
     appointmentId: string,
@@ -69,6 +75,21 @@ export class AttendancesService {
   ): Promise<SharedPreScreeningView | null> {
     const appointment = await this.scheduling.appointment(appointmentId, requestId);
     assertUnitScope(actor, appointment.unitId);
+    const scheduledToday =
+      (appointment.status === 'BOOKED' || appointment.status === 'CONFIRMED') &&
+      toLocalDate(appointment.startsAt) === todayLocal();
+    const open = appointment.status === 'CHECKED_IN' || scheduledToday;
+    const finished = await this.prisma.professionalScreening.findFirst({
+      where: { appointmentId, completedAt: { not: null } },
+      select: { id: true },
+    });
+    if (!open || finished) {
+      throw new AppException(
+        409,
+        'PRESCREENING_NOT_AVAILABLE',
+        'A pré-triagem compartilhada fica disponível só no dia do atendimento, enquanto ele está em aberto.',
+      );
+    }
     const view = await this.preScreenings.sharedForStaff(appointment.donorId, appointment.startsAt);
     if (view) {
       await this.audit.record({

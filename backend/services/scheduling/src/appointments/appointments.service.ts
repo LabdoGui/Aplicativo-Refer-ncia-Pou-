@@ -17,6 +17,7 @@ import {
   type GeneratedSlot,
 } from '../domain/schedule';
 import { PrismaService } from '../prisma/prisma.service';
+import { StaleAppointmentsService } from './stale-appointments.service';
 import {
   APPOINTMENT_INCLUDE,
   toAppointmentView,
@@ -65,6 +66,7 @@ export class AppointmentsService {
     private readonly campaigns: CampaignsService,
     private readonly outbox: OutboxService,
     private readonly audit: AuditService,
+    private readonly stale: StaleAppointmentsService,
   ) {}
 
   async book(
@@ -80,6 +82,8 @@ export class AppointmentsService {
       startsAt,
       unit.timezone,
     );
+    // Um agendamento antigo que ficou para trás não impede a nova reserva.
+    await this.stale.expire(new Date(), donor.id);
     await this.assertNoActiveAppointment(donor.id);
 
     const created = await this.runBooking(async (tx) => {

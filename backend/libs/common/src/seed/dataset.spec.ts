@@ -24,6 +24,17 @@ describe('buildSeedDataset', () => {
     expect(new Set(emails).size).toBe(emails.length);
   });
 
+  it('não tem agendamento nem cancelamento anteriores ao cadastro do doador', () => {
+    const registered = new Map(dataset.users.map((user) => [user.id, user.createdAt]));
+    for (const appointment of dataset.appointments) {
+      expect(appointment.createdAt >= registered.get(appointment.donorId)!).toBe(true);
+      expect(appointment.createdAt < appointment.startsAt).toBe(true);
+      if (appointment.cancelledAt) {
+        expect(appointment.cancelledAt >= appointment.createdAt).toBe(true);
+      }
+    }
+  });
+
   it('mantém no máximo um agendamento ativo por doador', () => {
     const counts = new Map<string, number>();
     for (const appointment of dataset.appointments) {

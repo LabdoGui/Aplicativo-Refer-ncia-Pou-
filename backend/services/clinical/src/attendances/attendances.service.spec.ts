@@ -1,4 +1,4 @@
-import { AppException } from '@pulso/common';
+import { AppException, todayLocal } from '@pulso/common';
 import type { AuthUser, InternalAppointmentView } from '@pulso/contracts';
 import { AttendancesService } from './attendances.service';
 
@@ -32,6 +32,7 @@ function setup(overrides: Partial<InternalAppointmentView> = {}) {
   const prisma = {
     professionalScreening: {
       findUnique: jest.fn(async () => null),
+      findFirst: jest.fn(async (): Promise<{ id: string } | null> => null),
       create: jest.fn(async ({ data }: { data: Record<string, unknown> }) => ({
         id: 'att-1',
         createdAt: new Date('2026-10-17T12:10:00Z'),
@@ -50,15 +51,16 @@ function setup(overrides: Partial<InternalAppointmentView> = {}) {
     encryptJson: jest.fn((value: unknown) => `cifrado:${JSON.stringify(value)}`),
     encrypt: jest.fn((value: string) => `cifrado:${value}`),
   };
+  const preScreenings = { sharedForStaff: jest.fn(async () => ({ id: 'pre-1' })) };
   const service = new AttendancesService(
     prisma as never,
     encryption as never,
     scheduling as never,
-    {} as never,
+    preScreenings as never,
     outbox as never,
     audit as never,
   );
-  return { service, prisma, outbox, audit };
+  return { service, prisma, outbox, audit, preScreenings };
 }
 
 const dto = { appointmentId: appointment.id, values: { WEIGHT: 70 }, result: 'FIT' as const };
@@ -114,5 +116,61 @@ describe('AttendancesService.record', () => {
     const { service, prisma } = setup();
     prisma.professionalScreening.findUnique.mockResolvedValueOnce({ id: 'existente' } as never);
     await expectCode(service.record(nurse, dto), 'ATTENDANCE_EXISTS');
+  });
+});
+
+describe('AttendancesService.sharedPreScreening', () => {
+  const todayNoon = `${todayLocal()}T15:00:00.000Z`;
+
+  it('libera durante o atendimento e audita o acesso', async () => {
+    const { service, audit, preScreenings } = setup({ status: 'CHECKED_IN' });
+    await expect(service.sharedPreScreening(nurse, appointment.id)).resolves.toEqual({
+      id: 'pre-1',
+    });
+    expect(preScreenings.sharedForStaff).toHaveBeenCalledWith('d1', appointment.startsAt);
+    expect(audit.record).toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'prescreening.viewed_by_staff' }),
+    );
+  });
+
+  it('libera agendamento do dia antes do check-in', async () => {
+    const { service } = setup({ status: 'CONFIRMED', startsAt: todayNoon });
+    await expect(service.sharedPreScreening(nurse, appointment.id)).resolves.toEqual({
+      id: 'pre-1',
+    });
+  });
+
+  it.each(['CANCELLED', 'NO_SHOW', 'COMPLETED'] as const)(
+    'recusa agendamento %s',
+    async (status) => {
+      const { service, preScreenings } = setup({ status, startsAt: todayNoon });
+      await expectCode(
+        service.sharedPreScreening(nurse, appointment.id),
+        'PRESCREENING_NOT_AVAILABLE',
+      );
+      expect(preScreenings.sharedForStaff).not.toHaveBeenCalled();
+    },
+  );
+
+  it('recusa agendamento de outro dia ainda não atendido', async () => {
+    const { service } = setup({ status: 'BOOKED', startsAt: '2020-01-10T12:00:00.000Z' });
+    await expectCode(
+      service.sharedPreScreening(nurse, appointment.id),
+      'PRESCREENING_NOT_AVAILABLE',
+    );
+  });
+
+  it('recusa depois que o atendimento terminou', async () => {
+    const { service, prisma } = setup({ status: 'CHECKED_IN' });
+    prisma.professionalScreening.findFirst.mockResolvedValueOnce({ id: 'att-1' });
+    await expectCode(
+      service.sharedPreScreening(nurse, appointment.id),
+      'PRESCREENING_NOT_AVAILABLE',
+    );
+  });
+
+  it('recusa profissional de outra unidade', async () => {
+    const { service } = setup({ unitId: 'u-norte' });
+    await expectCode(service.sharedPreScreening(nurse, appointment.id), 'UNIT_SCOPE');
   });
 });

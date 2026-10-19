@@ -28,7 +28,8 @@ export function SharedPreScreeningPanel({ appointmentId }: { appointmentId: stri
       <QueryState isLoading={query.isLoading} error={query.error} onRetry={() => query.refetch()}>
         {query.data === null ? (
           <p className="text-sm text-ink-muted">
-            O doador não compartilhou as respostas da pré-triagem com a equipe.
+            Não há pré-triagem válida compartilhada pelo doador. A mais recente pode não ter sido
+            compartilhada ou já estar fora da validade.
           </p>
         ) : (
           query.data && <SharedAnswers data={query.data} />
@@ -45,9 +46,9 @@ function SharedAnswers({ data }: { data: SharedPreScreeningView }) {
       <div className="flex flex-wrap items-center gap-2">
         <Badge tone={TONES[data.result]}>{PRE_SCREENING_RESULT_LABELS[data.result]}</Badge>
         <span className="text-sm text-ink-muted">
-          Respondida em {formatDateTime(data.createdAt)}
+          Respondida em {formatDateTime(data.createdAt)} · válida até{' '}
+          {formatDateTime(data.expiresAt)}
         </span>
-        {data.expired && <Badge tone="warn">Fora da validade</Badge>}
       </div>
       <p className="text-sm text-ink-muted">
         Informativa: orienta a conversa, mas não substitui a triagem profissional.
