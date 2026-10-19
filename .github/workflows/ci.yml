@@ -53,8 +53,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      # As três jornadas e a matriz fazem dezenas de logins do mesmo IP em poucos
-      # minutos: acima do limite de produção (20 por minuto) nas rotas de senha.
+      # As jornadas e a matriz de autorização fazem centenas de requisições (e
+      # dezenas de logins) do mesmo IP em poucos minutos: acima dos limites de
+      # produção (300 por minuto no geral, 20 nas rotas de senha).
+      RATE_LIMIT_MAX: 5000
       AUTH_RATE_LIMIT_MAX: 200
     steps:
       - name: Baixar o código

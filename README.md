@@ -334,6 +334,10 @@ O desenho completo da API está em [docs/09](docs/09-api.md) e [docs/16, item 4]
 - Consentimento por finalidade (termos obrigatórios; comunicações opcional), compartilhamento da pré-triagem decidido a cada envio e revogável, cópia dos dados em JSON e exclusão da conta. Acessos e ações administrativas ficam na trilha de auditoria. Detalhes em [docs/10](docs/10-seguranca-lgpd.md).
 - A equipe só vê a pré-triagem compartilhada **mais recente e dentro da validade**, e só enquanto o atendimento está em aberto (no dia ou depois do check-in); cada acesso é auditado.
 - A **exclusão da conta** anonimiza a identidade e chega a todos os serviços pelo evento `identity.user.deleted`: agendamentos em aberto são cancelados (a vaga volta para a agenda), respostas e orientações da pré-triagem, PDFs emitidos e notificações são apagados e o apelido sai do ranking. Triagens e doações ficam pseudonimizadas (só o identificador), por obrigação de guarda da instituição de saúde.
+- Depois da exclusão, cada serviço guarda só o identificador da conta excluída: tokens ainda válidos não conseguem mais gravar nada (401) e eventos atrasados daquele doador são ignorados.
+- As respostas da pré-triagem são apagadas todo dia depois da validade (fica só o resultado, para as estatísticas); cada pré-triagem guarda a versão das regras com que foi calculada.
+- Lembretes de agendamento só saem para quem mantém o consentimento de comunicações. Colaboradores da recepção não veem o tipo sanguíneo do doador; a equipe só vê o resultado de um atendimento enquanto ele está em aberto.
+- Senhas: tentativas erradas contam por conta de forma atômica (logins simultâneos não furam o bloqueio) e ficam na auditoria, inclusive na troca de senha e na exclusão da conta.
 - Os segredos do `.env.example` e do `docker-compose.yml` são públicos e servem só para desenvolvimento.
 
 ## Documentação do projeto
