@@ -1,6 +1,9 @@
 import { fieldEncryptionKeySchema, serviceEnvSchema, z, type ServiceEnv } from '@pulso/common';
 import { PASSWORD_POLICY } from '@pulso/contracts';
 
+/** Variável vazia (ex.: `${VAR:-}` no docker-compose) conta como não informada. */
+const emptyAsUndefined = (value: unknown) => (value === '' ? undefined : value);
+
 /** Variáveis de ambiente do identity-service. */
 export const envSchema = serviceEnvSchema
   .extend({
@@ -24,13 +27,19 @@ export const envSchema = serviceEnvSchema
      * (SEED_DEMO_DATA=false): criado no boot se ainda não houver nenhum. Troque a
      * senha no primeiro acesso.
      */
-    BOOTSTRAP_ADMIN_EMAIL: z.string().email().toLowerCase().optional(),
-    BOOTSTRAP_ADMIN_PASSWORD: z
-      .string()
-      .min(PASSWORD_POLICY.minLength)
-      .max(PASSWORD_POLICY.maxLength)
-      .regex(PASSWORD_POLICY.pattern, PASSWORD_POLICY.message)
-      .optional(),
+    BOOTSTRAP_ADMIN_EMAIL: z.preprocess(
+      emptyAsUndefined,
+      z.string().email().toLowerCase().optional(),
+    ),
+    BOOTSTRAP_ADMIN_PASSWORD: z.preprocess(
+      emptyAsUndefined,
+      z
+        .string()
+        .min(PASSWORD_POLICY.minLength)
+        .max(PASSWORD_POLICY.maxLength)
+        .regex(PASSWORD_POLICY.pattern, PASSWORD_POLICY.message)
+        .optional(),
+    ),
   })
   .refine((env) => Boolean(env.BOOTSTRAP_ADMIN_EMAIL) === Boolean(env.BOOTSTRAP_ADMIN_PASSWORD), {
     message: 'Informe BOOTSTRAP_ADMIN_EMAIL e BOOTSTRAP_ADMIN_PASSWORD juntos.',

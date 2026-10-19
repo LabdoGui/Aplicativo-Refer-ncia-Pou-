@@ -97,6 +97,8 @@ const serviceSpecificEnv = {
 
 function serviceProcess(name) {
   const password = env(`${name.toUpperCase()}_DB_PASSWORD`, `${name}_dev_password`);
+  // Mesmo usuário por serviço do docker-compose (docker/rabbitmq/init-users.sh).
+  const brokerPassword = env(`RABBITMQ_${name.toUpperCase()}_PASSWORD`, `${name}_broker_dev`);
   const postgresUrl = (database) =>
     `postgresql://${name}_app:${password}@localhost:${infra.postgresPort}/${database}?schema=${name}`;
   return {
@@ -107,7 +109,7 @@ function serviceProcess(name) {
       PORT: String(SERVICES[name].defaultPort),
       DATABASE_URL: postgresUrl(infra.database),
       SHADOW_DATABASE_URL: postgresUrl(infra.shadowDatabase),
-      RABBITMQ_URL: `amqp://${infra.rabbitUser}:${infra.rabbitPassword}@localhost:${infra.rabbitPort}`,
+      RABBITMQ_URL: `amqp://${name}_svc:${brokerPassword}@localhost:${infra.rabbitPort}`,
       SEED_DEMO_DATA: env('SEED_DEMO_DATA', 'true'),
       ...serviceUrls,
       ...serviceSpecificEnv[name],

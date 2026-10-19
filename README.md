@@ -83,7 +83,7 @@ flowchart LR
     GW --> NO["notification :3006"]
     CL -->|"REST interno"| SC
     ID & SC & CL & IN & EN -->|"outbox → publish"| MQ[["RabbitMQ<br/>exchange pulso.events"]]
-    MQ --> SC & EN & NO
+    MQ --> SC & CL & EN & NO
     ID & SC & CL & IN & EN & NO --> PG[("PostgreSQL 16<br/>1 schema + 1 usuário por serviço")]
 ```
 
@@ -199,6 +199,7 @@ Outros comandos:
 | `npm run infra:down` | Para os contêineres do Compose |
 | `npm run docker:up` / `docker:down` | Sobe (com build) / derruba o ambiente completo em contêineres |
 | `npm run docker:reset` | Derruba tudo e **apaga** os volumes (banco e broker) |
+| `npm run dlq:replay -- <serviço> [--dry-run]` | Devolve à fila principal os eventos que esgotaram as tentativas (ex.: `notification-service`) |
 
 ## Configuração
 
@@ -208,11 +209,12 @@ As variáveis estão documentadas no [`.env.example`](.env.example), com os mesm
 |---|---|
 | `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` | Superusuário e banco do PostgreSQL |
 | `<SERVIÇO>_DB_PASSWORD` | Senha do usuário de cada schema (aplicada na criação do volume ou ao reaplicar o script; veja [Banco de dados](#banco-de-dados)) |
-| `RABBITMQ_USER`, `RABBITMQ_PASSWORD` | Administrador do broker (só para o painel de gestão) |
-| `RABBITMQ_<SERVIÇO>_PASSWORD` | Senha do usuário de cada serviço no broker (permissões mínimas) |
+| `RABBITMQ_USER`, `RABBITMQ_PASSWORD` | Administrador do broker (painel de gestão e `npm run dlq:replay`) |
+| `RABBITMQ_<SERVIÇO>_PASSWORD` | Senha do usuário `<serviço>_svc` no broker: só o exchange `pulso.events` e as próprias filas, publicando só as próprias routing keys ([`docker/rabbitmq/init-users.sh`](docker/rabbitmq/init-users.sh)) |
 | `IDENTITY_FIELD_ENCRYPTION_KEY`, `CLINICAL_FIELD_ENCRYPTION_KEY` | Chaves AES-256 dos campos cifrados (telefone; respostas e valores de saúde) |
 | `COOKIE_SECURE` | Flag `Secure` do cookie de sessão (`true` em produção com HTTPS) |
 | `RUN_MIGRATIONS`, `SEED_DEMO_DATA` | Migrações no boot e dados fictícios de demonstração |
+| `BOOTSTRAP_ADMIN_EMAIL`, `BOOTSTRAP_ADMIN_PASSWORD` | Sem dados de demonstração: primeiro administrador, criado no boot se ainda não houver nenhum |
 | `DEMO_EARLY_CHECK_IN` | Só para demonstração: check-in de agendamentos de dias futuros (jornada completa numa sessão) |
 | `INTERNAL_API_TOKEN` | Token das rotas `/internal/*` entre serviços |
 | `LOG_LEVEL` | Nível dos logs JSON |
@@ -261,6 +263,8 @@ docker compose exec postgres sh /docker-entrypoint-initdb.d/01-init.sh
 ```
 
 **Migrações.** Cada serviço tem as suas em `backend/services/<serviço>/prisma/migrations` e as aplica no boot (`RUN_MIGRATIONS=true`, com `prisma migrate deploy`). Restrições que o Prisma não expressa (CHECKs e o índice único parcial "um agendamento ativo por doador") estão em SQL na migração inicial; ao gerar uma migração nova no scheduling, apague qualquer `DROP INDEX "appointments_one_active_per_donor"` que o Prisma proponha.
+
+**Dados de referência.** Mesmo sem demonstração, o boot cria o que o sistema precisa para funcionar: uma linha de estoque por tipo sanguíneo (zerada, crítica até a primeira entrada), o questionário base da pré-triagem, os campos da triagem, as configurações e o catálogo de conquistas.
 
 **Dados de demonstração.** Com `SEED_DEMO_DATA=true`, cada serviço grava a sua parte de um conjunto **fictício e determinístico** (`backend/libs/common/src/seed/dataset.ts`, mesmos IDs em todos os schemas) quando as suas tabelas estão vazias. As datas são relativas ao dia da subida, então o painel sempre tem histórico recente e a agenda de hoje tem atendimentos. Para gerar tudo de novo: `docker compose down -v && docker compose up -d`.
 
@@ -324,7 +328,9 @@ O desenho completo da API está em [docs/09](docs/09-api.md) e [docs/16, item 4]
 - A **triagem presencial** e o **estoque** são **simulação acadêmica**. As perguntas e regras da pré-triagem e o intervalo entre doações ficam em tabelas configuráveis, marcados como **pendentes de validação por profissional de saúde**; a triagem profissional não tem limiares automáticos (o resultado é sempre decisão do enfermeiro).
 - O comprovante gerado é **acadêmico e verificável**; não é o atestado oficial de doação.
 - Os dados de saúde ficam concentrados no serviço `clinical`, com respostas e valores **cifrados** (AES-256-GCM), nunca em eventos, logs ou auditoria. O doador não vê o resultado nem os valores da triagem profissional; as notificações nunca citam dados clínicos.
-- Consentimento por finalidade (termos obrigatórios; comunicações opcional), compartilhamento da pré-triagem decidido a cada envio e revogável, cópia dos dados em JSON e exclusão da conta (anonimização). Acessos e ações administrativas ficam na trilha de auditoria. Detalhes em [docs/10](docs/10-seguranca-lgpd.md).
+- Consentimento por finalidade (termos obrigatórios; comunicações opcional), compartilhamento da pré-triagem decidido a cada envio e revogável, cópia dos dados em JSON e exclusão da conta. Acessos e ações administrativas ficam na trilha de auditoria. Detalhes em [docs/10](docs/10-seguranca-lgpd.md).
+- A equipe só vê a pré-triagem compartilhada **mais recente e dentro da validade**, e só enquanto o atendimento está em aberto (no dia ou depois do check-in); cada acesso é auditado.
+- A **exclusão da conta** anonimiza a identidade e chega a todos os serviços pelo evento `identity.user.deleted`: agendamentos em aberto são cancelados (a vaga volta para a agenda), respostas e orientações da pré-triagem, PDFs emitidos e notificações são apagados e o apelido sai do ranking. Triagens e doações ficam pseudonimizadas (só o identificador), por obrigação de guarda da instituição de saúde.
 - Os segredos do `.env.example` e do `docker-compose.yml` são públicos e servem só para desenvolvimento.
 
 ## Documentação do projeto

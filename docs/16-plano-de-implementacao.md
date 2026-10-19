@@ -41,7 +41,7 @@ flowchart LR
     GW --> NO["notification :3006"]
     CL -->|"REST interno"| SC
     ID & SC & CL & IN & EN -->|"outbox → publish"| MQ[["RabbitMQ<br/>exchange pulso.events"]]
-    MQ --> SC & EN & NO
+    MQ --> SC & CL & EN & NO
     ID & SC & CL & IN & EN & NO --> PG[("PostgreSQL<br/>1 schema + 1 usuário por serviço")]
 ```
 
@@ -124,6 +124,7 @@ flowchart LR
 | Routing key | Produtor | Consumidores | Payload mínimo |
 |---|---|---|---|
 | `identity.user.registered` | identity | notification | userId, name, role |
+| `identity.user.deleted` | identity | scheduling, clinical, engagement, notification | userId, occurredAt (exclusão da conta: cada serviço apaga ou desvincula os dados pessoais) |
 | `scheduling.appointment.booked` | scheduling | notification | appointmentId, code, donorId, unitName, startsAt |
 | `scheduling.appointment.cancelled` | scheduling | notification | appointmentId, donorId, startsAt, cancelledBy |
 | `scheduling.appointment.rescheduled` | scheduling | notification | appointmentId, previousAppointmentId, donorId, unitName, startsAt |
@@ -134,6 +135,7 @@ flowchart LR
 | `inventory.stock.level_changed` | inventory | notification | bloodType, previousStatus, status, quantity |
 | `engagement.achievement.unlocked` | engagement | notification | donorId, achievementCode, achievementName |
 | `engagement.points.awarded` | engagement | notification | donorId, points, reason, totalPoints |
+| `engagement.hours.reviewed` | engagement | notification | hoursId, donorId, hours, status, institutionName |
 
 **Nunca** trafegam em eventos: respostas da pré-triagem, campos da triagem, motivos de inaptidão.
 
@@ -280,7 +282,8 @@ Limitações registradas na Fase 1 e como ficaram:
 
 | Item | Situação atual | O que fazer |
 |---|---|---|
-| Usuários do RabbitMQ por serviço | Os 6 serviços conectam como o administrador do broker (`RABBITMQ_USER`, permissão `.* .* .*` no vhost `/`). Qualquer serviço pode publicar qualquer evento (ex.: o notification forjar `clinical.donation.completed`, que vira pontos no engagement), consumir ou apagar filas de outros e remover exchanges, contrariando o menor privilégio do [doc 10](10-seguranca-lgpd.md) | Um usuário por serviço, criado por um `definitions.json` carregado pelo contêiner do RabbitMQ (ou script de init): `write` só em `pulso.events` (e nas próprias filas), com *topic permissions* que limitam a publicação às routing keys iniciadas por `<serviço>.`; `configure` só nas próprias filas; `read` nas próprias filas e em `pulso.events` (exigido pelo bind). O administrador fica só para a interface de gestão |
+| Usuários do RabbitMQ por serviço | **Resolvido na Fase 13.** `docker/rabbitmq/init-users.sh` roda no contêiner do broker a cada subida e (re)cria um usuário `<serviço>_svc` por serviço: `configure`/`read`/`write` só em `pulso.events` e nas próprias filas (`pulso.<serviço>-service`, `.retry.<espera>`, `.dlq`), `write` também em `amq.default` (reenvio às filas de retry e DLQ) e *topic permission* que só deixa publicar routing keys `<serviço>.` (o notification não publica nada). O health check do broker só fica verde depois disso. O administrador (`RABBITMQ_USER`) fica para a interface de gestão e para `npm run dlq:replay` | Em produção, senhas por segredo (`RABBITMQ_<SERVIÇO>_PASSWORD`) e TLS no AMQP |
+| Retentativas e DLQ | **Resolvido na Fase 13.** Escada de filas de retry com TTL próprio (10 s, 1 min, 5 min, 30 min: ~36 min antes da DLQ); `npm run dlq:replay -- <serviço>` devolve as mensagens mortas à fila principal (com `--dry-run` para só listar) | Alertar quando a DLQ tiver mensagens (métrica do broker) |
 | Rate limit em memória | Mantido: janela fixa em memória no gateway (`FixedWindowRateLimiter`), suficiente para uma réplica. Verificado no teste de carga (`scripts/load-test.mjs`), que conta as respostas 429 à parte | Com mais de uma réplica do gateway, mover os contadores para um armazenamento comum (ex.: Redis) |
 | Volume das chaves do identity | **Resolvido na Fase 2.** Volume nomeado `identity-keys` montado em `/var/lib/pulso/identity-keys` (pasta criada na imagem com dono `node` e permissão 700; chave privada com 600). Recriar o contêiner não derruba as sessões | Em produção, chave por segredo (`JWT_PRIVATE_KEY`, já suportada) e rotação com dois `kid` no JWKS |
 

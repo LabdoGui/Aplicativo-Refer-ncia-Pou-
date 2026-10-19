@@ -15,6 +15,8 @@ set -eu
 READY_FILE=/tmp/pulso-users-ready
 rm -f "$READY_FILE"
 
+# Espera o broker criar o cookie do Erlang (a CLI não deve criar um próprio).
+until [ -s "${HOME:-/var/lib/rabbitmq}/.erlang.cookie" ]; do sleep 1; done
 until rabbitmqctl -q await_startup >/dev/null 2>&1; do sleep 2; done
 
 apply_user() {
