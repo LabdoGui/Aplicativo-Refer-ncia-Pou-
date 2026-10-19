@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Alert, Badge, PageHeader } from '@/components/ui';
+import { Alert, PageHeader } from '@/components/ui';
 import { PublicContainer } from '@/layouts/public/PublicContainer';
 import { useDocumentTitle } from '@/lib/use-document-title';
 
@@ -48,9 +48,9 @@ const RIGHTS = [
 
 const CONSENT_PURPOSES = [
   'Aceitar os termos de uso e esta política de privacidade (necessário para criar a conta).',
-  'Compartilhar a sua pré-triagem com a equipe de saúde da unidade.',
-  'Aparecer no ranking público, com um apelido.',
-  'Receber comunicações do Pulso.',
+  'Compartilhar as respostas da pré-triagem com a equipe da unidade (escolhido a cada envio).',
+  'Aparecer no ranking, só com um apelido.',
+  'Receber lembretes e comunicações do Pulso.',
 ];
 
 function Section({ id, title, children }: { id: string; title: string; children: ReactNode }) {
@@ -133,12 +133,10 @@ export function PrivacyPage() {
             conta:
           </p>
           <BulletList items={CONSENT_PURPOSES} />
-          <p className="flex flex-wrap items-center gap-2 pt-1">
-            <Badge tone="info">Fase 3</Badge>
-            <span>
-              A gestão detalhada dos consentimentos, pela área do doador, chega na Fase 3 do
-              roadmap.
-            </span>
+          <p className="pt-1">
+            Depois de entrar, você gerencia tudo em <strong>Perfil → Privacidade e dados</strong>:
+            consentimentos, compartilhamento da pré-triagem, cópia dos seus dados e exclusão da
+            conta. A participação no ranking fica na tela de Conquistas.
           </p>
         </Section>
       </div>

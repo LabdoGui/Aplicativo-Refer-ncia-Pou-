@@ -6,12 +6,8 @@ import { DonorLayout } from '@/layouts/DonorLayout';
 import { PublicContainer } from '@/layouts/public/PublicContainer';
 import { PublicLayout } from '@/layouts/PublicLayout';
 import { StaffLayout } from '@/layouts/StaffLayout';
-import { LoginPage } from '@/pages/auth/LoginPage';
-import { RegisterPage } from '@/pages/auth/RegisterPage';
 import { LandingPage } from '@/pages/public/LandingPage';
 import { NotFoundPage } from '@/pages/public/NotFoundPage';
-import { PrivacyPage } from '@/pages/public/PrivacyPage';
-import { StatusPage } from '@/pages/public/StatusPage';
 import { RouteErrorPage } from '@/pages/RouteErrorPage';
 import { RootRoute } from './RootRoute';
 
@@ -36,10 +32,34 @@ export const routes: RouteObject[] = [
         element: <PublicLayout />,
         children: [
           { index: true, element: <LandingPage /> },
-          { path: 'privacidade', element: <PrivacyPage /> },
-          { path: 'status', element: <StatusPage /> },
-          { path: 'entrar', element: <LoginPage /> },
-          { path: 'cadastro', element: <RegisterPage /> },
+          {
+            path: 'privacidade',
+            lazy: page(
+              () => import('@/pages/public/PrivacyPage'),
+              (m) => m.PrivacyPage,
+            ),
+          },
+          {
+            path: 'status',
+            lazy: page(
+              () => import('@/pages/public/StatusPage'),
+              (m) => m.StatusPage,
+            ),
+          },
+          {
+            path: 'entrar',
+            lazy: page(
+              () => import('@/pages/auth/LoginPage'),
+              (m) => m.LoginPage,
+            ),
+          },
+          {
+            path: 'cadastro',
+            lazy: page(
+              () => import('@/pages/auth/RegisterPage'),
+              (m) => m.RegisterPage,
+            ),
+          },
           {
             path: 'verificar/:code?',
             lazy: page(
