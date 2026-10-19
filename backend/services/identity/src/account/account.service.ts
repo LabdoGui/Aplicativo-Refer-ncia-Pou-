@@ -87,13 +87,14 @@ export class AccountService {
     requestId?: string,
   ): Promise<void> {
     const user = await this.load(actor.id);
-    this.auth.assertNotLocked(user);
+    await this.auth.reservePasswordAttempt(user.id);
     if (!(await this.passwords.verify(user.passwordHash, dto.currentPassword))) {
-      await this.auth.registerFailedPassword(user.id, requestId);
+      await this.auth.registerFailedPassword(user.id, 'user.password_check_failed', requestId);
       throw new AppException(422, 'WRONG_PASSWORD', 'A senha atual não confere.', undefined, [
         { field: 'currentPassword', message: 'A senha atual não confere.' },
       ]);
     }
+    await this.auth.confirmPasswordAttempt(user.id);
     if (dto.currentPassword === dto.newPassword) {
       throw new AppException(
         422,
@@ -105,11 +106,7 @@ export class AccountService {
     }
     await this.prisma.user.update({
       where: { id: user.id },
-      data: {
-        passwordHash: await this.passwords.hash(dto.newPassword),
-        failedLoginAttempts: 0,
-        lockedUntil: null,
-      },
+      data: { passwordHash: await this.passwords.hash(dto.newPassword) },
     });
     // Outros dispositivos saem; o atual continua conectado. O cookie de refresh só
     // vai para /auth, então a sessão atual vem do access token (claim sid).
@@ -213,13 +210,14 @@ export class AccountService {
    */
   async deleteAccount(actor: AuthUser, password: string, requestId?: string): Promise<void> {
     const user = await this.load(actor.id);
-    this.auth.assertNotLocked(user);
+    await this.auth.reservePasswordAttempt(user.id);
     if (!(await this.passwords.verify(user.passwordHash, password))) {
-      await this.auth.registerFailedPassword(user.id, requestId);
+      await this.auth.registerFailedPassword(user.id, 'user.password_check_failed', requestId);
       throw new AppException(422, 'WRONG_PASSWORD', 'A senha não confere.', undefined, [
         { field: 'password', message: 'A senha não confere.' },
       ]);
     }
+    await this.auth.confirmPasswordAttempt(user.id);
     if (user.role === 'ADMIN') {
       throw new AppException(
         422,

@@ -135,6 +135,28 @@ export class AdminUsersService {
     const role = dto.role ?? user.role;
     const unitIds = dto.unitIds ?? user.professionalProfile?.unitIds ?? [];
     if (role !== 'DONOR') this.assertUnits(role, unitIds);
+    // O formulário reenvia todos os campos: só conta como mudança o que difere do atual.
+    const sameUnits = (a: string[], b: string[]) =>
+      a.length === b.length && [...a].sort().join() === [...b].sort().join();
+    const changed = {
+      role: dto.role !== undefined && dto.role !== user.role,
+      unitIds:
+        dto.unitIds !== undefined &&
+        role !== 'ADMIN' &&
+        !sameUnits(dto.unitIds, user.professionalProfile?.unitIds ?? []),
+      disabled: dto.status === 'DISABLED' && user.status !== 'DISABLED',
+    };
+    const changedFields = (Object.keys(dto) as Array<keyof UpdateUserDto>).filter((field) => {
+      if (dto[field] === undefined) return false;
+      if (field === 'role') return changed.role;
+      if (field === 'unitIds') return changed.unitIds;
+      if (field === 'status') return dto.status !== user.status;
+      if (field === 'name') return dto.name !== user.name;
+      if (field === 'registryNumber') {
+        return dto.registryNumber !== (user.professionalProfile?.registryNumber ?? null);
+      }
+      return true;
+    });
 
     const updated = await this.prisma.$transaction(async (tx) => {
       const row = await tx.user.update({
@@ -170,15 +192,19 @@ export class AdminUsersService {
           action: 'user.updated_by_admin',
           entity: 'user',
           entityId: id,
-          metadata: { fields: Object.keys(dto), status: dto.status, role: dto.role },
+          metadata: {
+            fields: changedFields,
+            ...(changedFields.includes('status') ? { status: dto.status } : {}),
+            ...(changed.role ? { role: dto.role } : {}),
+          },
           requestId,
         },
         tx,
       );
       return row;
     });
-    // Papel, unidades ou status mudaram: sessões antigas não podem continuar valendo.
-    if (dto.status === 'DISABLED' || dto.role !== undefined || dto.unitIds !== undefined) {
+    // Papel, unidades ou status mudaram de fato: sessões antigas não podem continuar valendo.
+    if (changed.disabled || changed.role || changed.unitIds) {
       await this.auth.revokeAllSessions(id);
     }
     return this.toView(updated);

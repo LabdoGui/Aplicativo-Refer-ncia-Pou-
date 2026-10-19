@@ -56,7 +56,21 @@ export class AttendancesService {
     });
     if (attendance) {
       assertUnitScope(actor, attendance.unitId);
-      return toAttendanceStaffView(attendance);
+      const view = toAttendanceStaffView(attendance);
+      // Dado de saúde só durante o atendimento (ou no mesmo dia em que terminou),
+      // com leitura registrada; atendimentos antigos mostram apenas que terminaram.
+      const open =
+        attendance.completedAt === null || toLocalDate(attendance.completedAt) === todayLocal();
+      if (!open) return { ...view, result: null, professionalName: null };
+      await this.audit.record({
+        actor,
+        action: 'attendance.viewed_by_staff',
+        entity: 'attendance',
+        entityId: attendance.id,
+        metadata: { appointmentId },
+        requestId,
+      });
+      return view;
     }
     const appointment = await this.scheduling.appointment(appointmentId, requestId);
     assertUnitScope(actor, appointment.unitId);

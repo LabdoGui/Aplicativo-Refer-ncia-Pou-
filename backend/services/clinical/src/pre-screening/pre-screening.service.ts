@@ -123,7 +123,8 @@ export class PreScreeningService {
           action: 'prescreening.submitted',
           entity: 'pre_screening',
           entityId: created.id,
-          metadata: { result: evaluation.result, shared: dto.shareWithStaff },
+          // Sem o resultado (dado de saúde): a trilha registra o fato e o compartilhamento.
+          metadata: { shared: dto.shareWithStaff },
           requestId,
         },
         tx,

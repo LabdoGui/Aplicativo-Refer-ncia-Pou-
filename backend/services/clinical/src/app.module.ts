@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ScheduleModule } from '@nestjs/schedule';
 import {
   AuditModule,
   BrokerHealthIndicator,
@@ -15,6 +16,7 @@ import { DonationsModule } from './donations/donations.module';
 import { InternalController } from './internal/internal.controller';
 import { PreScreeningModule } from './pre-screening/pre-screening.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { AnswersRetentionJob } from './privacy/answers-retention.job';
 import { UserDeletedHandler } from './privacy/user-deleted.handler';
 import { SchedulingClientModule } from './scheduling/scheduling.module';
 import { ScreeningConfigModule } from './screening-config/screening-config.module';
@@ -28,6 +30,7 @@ import { SettingsModule } from './settings/settings.module';
     MessagingModule.forRoot(),
     AuditModule.forRoot(),
     HealthModule.forRoot([DatabaseHealthIndicator, BrokerHealthIndicator]),
+    ScheduleModule.forRoot(),
     CryptoModule,
     SettingsModule,
     SchedulingClientModule,
@@ -38,6 +41,6 @@ import { SettingsModule } from './settings/settings.module';
     ScreeningConfigModule,
   ],
   controllers: [InternalController],
-  providers: [SeedService, UserDeletedHandler],
+  providers: [SeedService, UserDeletedHandler, AnswersRetentionJob],
 })
 export class AppModule {}

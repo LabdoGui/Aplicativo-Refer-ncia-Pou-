@@ -24,15 +24,24 @@ export function AttendanceOutcome({
           {attendance.completed ? 'Atendimento finalizado' : 'Triagem registrada'}
         </h2>
       </div>
+      {attendance.result === null && (
+        <p className="text-sm text-ink-muted">
+          O resultado da triagem fica visível só durante o atendimento e no dia em que ele termina.
+        </p>
+      )}
       <dl className="grid gap-3 text-sm sm:grid-cols-2">
-        <div>
-          <dt className="text-ink-muted">Resultado da triagem</dt>
-          <dd className="font-semibold text-ink">{SCREENING_RESULT_LABELS[attendance.result]}</dd>
-        </div>
-        <div>
-          <dt className="text-ink-muted">Profissional</dt>
-          <dd className="font-semibold text-ink">{attendance.professionalName}</dd>
-        </div>
+        {attendance.result !== null && (
+          <div>
+            <dt className="text-ink-muted">Resultado da triagem</dt>
+            <dd className="font-semibold text-ink">{SCREENING_RESULT_LABELS[attendance.result]}</dd>
+          </div>
+        )}
+        {attendance.professionalName && (
+          <div>
+            <dt className="text-ink-muted">Profissional</dt>
+            <dd className="font-semibold text-ink">{attendance.professionalName}</dd>
+          </div>
+        )}
         <div>
           <dt className="text-ink-muted">Registrado em</dt>
           <dd className="font-semibold text-ink">{formatDateTime(attendance.createdAt)}</dd>

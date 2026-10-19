@@ -73,6 +73,12 @@ async function expectCode(promise: Promise<unknown>, code: string) {
 }
 
 describe('DonationsService.record', () => {
+  it('doação concluída exige volume maior que zero', async () => {
+    const { service, prisma } = setup();
+    await expectCode(service.record(nurse, { ...dto, volumeMl: 0 }), 'VALIDATION_ERROR');
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
   it('só registra doação de triagem apta', async () => {
     const { service } = setup({ result: 'NEEDS_EVALUATION' });
     await expectCode(service.record(nurse, dto), 'SCREENING_NOT_FIT');

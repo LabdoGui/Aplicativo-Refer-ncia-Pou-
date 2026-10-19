@@ -37,7 +37,8 @@ function setup() {
     hash: jest.fn(async () => 'novo-hash'),
   };
   const auth = {
-    assertNotLocked: jest.fn(),
+    reservePasswordAttempt: jest.fn(async () => undefined),
+    confirmPasswordAttempt: jest.fn(async () => undefined),
     registerFailedPassword: jest.fn(async () => undefined),
     revokeAllSessions: jest.fn(async () => undefined),
     familyOf: jest.fn(async () => undefined),
@@ -71,15 +72,19 @@ describe('AccountService.changePassword', () => {
     const promise = service.changePassword(actor, dto, undefined);
     await expect(promise).rejects.toBeInstanceOf(AppException);
     await promise.catch((error: AppException) => expect(error.code).toBe('WRONG_PASSWORD'));
-    expect(auth.registerFailedPassword).toHaveBeenCalledWith(actor.id, undefined);
+    expect(auth.registerFailedPassword).toHaveBeenCalledWith(
+      actor.id,
+      'user.password_check_failed',
+      undefined,
+    );
     expect(prisma.user.update).not.toHaveBeenCalled();
   });
 
   it('respeita o bloqueio por tentativas antes de conferir a senha', async () => {
     const { service, passwords, auth } = setup();
-    auth.assertNotLocked.mockImplementationOnce(() => {
-      throw new AppException(429, 'ACCOUNT_LOCKED', 'Bloqueada');
-    });
+    auth.reservePasswordAttempt.mockRejectedValueOnce(
+      new AppException(429, 'ACCOUNT_LOCKED', 'Bloqueada'),
+    );
     await expect(service.changePassword(actor, dto, undefined)).rejects.toBeInstanceOf(
       AppException,
     );
@@ -106,6 +111,10 @@ describe('AccountService.deleteAccount', () => {
     const { service, passwords, auth } = setup();
     passwords.verify.mockResolvedValueOnce(false);
     await expect(service.deleteAccount(actor, 'errada')).rejects.toBeInstanceOf(AppException);
-    expect(auth.registerFailedPassword).toHaveBeenCalledWith(actor.id, undefined);
+    expect(auth.registerFailedPassword).toHaveBeenCalledWith(
+      actor.id,
+      'user.password_check_failed',
+      undefined,
+    );
   });
 });

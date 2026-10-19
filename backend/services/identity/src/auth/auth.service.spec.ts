@@ -18,6 +18,8 @@ function makeService() {
       create: jest.fn(async () => ({})) as Mock,
     },
     donorProfile: { findUnique: jest.fn(async () => null) as Mock },
+    // Reserva da tentativa: devolve a linha quando a conta não está bloqueada.
+    $queryRaw: jest.fn(async () => [{ failedLoginAttempts: 1 }]) as Mock,
     $transaction: jest.fn() as Mock,
   };
   prisma.$transaction.mockImplementation(async (fn: (tx: unknown) => unknown) => fn(prisma));
@@ -47,7 +49,7 @@ function makeService() {
     audit as never,
     { COOKIE_SECURE: false } as never,
   );
-  return { service, prisma, passwords, outbox, audit };
+  return { service, prisma, passwords, outbox, audit, tokens };
 }
 
 const user = {
@@ -125,60 +127,66 @@ describe('AuthService.login', () => {
     );
   });
 
-  it('conta a senha errada com incremento atômico', async () => {
+  it('reserva a tentativa antes de conferir a senha e audita a falha', async () => {
     const { service, prisma, passwords, audit } = makeService();
     prisma.user.findUnique.mockResolvedValue(user);
+    prisma.user.updateMany.mockResolvedValueOnce({ count: 0 });
     passwords.verify.mockResolvedValue(false);
     await expectCode(
       service.login({ email: user.email, password: 'errada' }, {}),
       'INVALID_CREDENTIALS',
     );
-    expect(prisma.user.update).toHaveBeenCalledWith(
-      expect.objectContaining({ data: { failedLoginAttempts: { increment: 1 } } }),
+    const reserve = prisma.$queryRaw.mock.calls[0][0].join('?');
+    expect(reserve).toContain('"failedLoginAttempts" = "failedLoginAttempts" + 1');
+    expect(reserve).toContain('"lockedUntil" IS NULL');
+    expect(reserve).toContain('"failedLoginAttempts" <');
+    expect(audit.record).toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'auth.login_failed', entityId: user.id }),
     );
-    expect(prisma.user.updateMany).not.toHaveBeenCalled();
-    expect(audit.record).not.toHaveBeenCalled();
+    expect(audit.record).not.toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'auth.account_locked' }),
+    );
   });
 
-  it(`bloqueia a conta na ${MAX_FAILED_LOGINS}ª senha errada`, async () => {
+  it(`bloqueia a conta ao atingir ${MAX_FAILED_LOGINS} senhas erradas`, async () => {
     const { service, prisma, passwords, audit } = makeService();
     prisma.user.findUnique.mockResolvedValue(user);
-    prisma.user.update.mockResolvedValueOnce({ failedLoginAttempts: MAX_FAILED_LOGINS });
     passwords.verify.mockResolvedValue(false);
     await expectCode(
       service.login({ email: user.email, password: 'errada' }, {}),
       'INVALID_CREDENTIALS',
     );
     const lock = prisma.user.updateMany.mock.calls[0][0];
-    expect(lock.where).toEqual({
-      id: user.id,
-      failedLoginAttempts: { gte: MAX_FAILED_LOGINS },
-    });
+    expect(lock.where).toEqual(
+      expect.objectContaining({ id: user.id, failedLoginAttempts: { gte: MAX_FAILED_LOGINS } }),
+    );
     expect(lock.data.lockedUntil).toBeInstanceOf(Date);
     expect(audit.record).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'auth.account_locked' }),
     );
   });
 
-  it('tentativas simultâneas no limite bloqueiam e auditam uma vez só', async () => {
-    const { service, prisma, audit } = makeService();
-    prisma.user.update.mockResolvedValueOnce({ failedLoginAttempts: MAX_FAILED_LOGINS + 1 });
-    prisma.user.updateMany.mockResolvedValueOnce({ count: 0 });
-    await service.registerFailedPassword(user.id);
-    expect(audit.record).not.toHaveBeenCalled();
-  });
-
-  it('não verifica a senha enquanto a conta está bloqueada', async () => {
+  it('com a conta bloqueada (ou o limite tomado por tentativas simultâneas) nem confere a senha', async () => {
     const { service, prisma, passwords } = makeService();
-    prisma.user.findUnique.mockResolvedValue({
-      ...user,
-      lockedUntil: new Date(Date.now() + 60_000),
-    });
+    prisma.user.findUnique
+      .mockResolvedValueOnce(user)
+      .mockResolvedValueOnce({ lockedUntil: new Date(Date.now() + 60_000) });
+    prisma.$queryRaw.mockResolvedValueOnce([]);
     await expectCode(
       service.login({ email: user.email, password: 'qualquer' }, {}),
       'ACCOUNT_LOCKED',
     );
     expect(passwords.verify).not.toHaveBeenCalled();
+  });
+
+  it('senha certa não abre sessão se outra tentativa bloqueou a conta no meio-tempo', async () => {
+    const { service, prisma, tokens } = makeService();
+    prisma.user.findUnique.mockResolvedValueOnce(user).mockResolvedValueOnce({
+      lockedUntil: new Date(Date.now() + 60_000),
+    });
+    prisma.user.updateMany.mockResolvedValueOnce({ count: 0 });
+    await expectCode(service.login({ email: user.email, password: 'certa' }, {}), 'ACCOUNT_LOCKED');
+    expect(tokens.signAccessToken).not.toHaveBeenCalled();
   });
 
   it('recusa conta desativada mesmo com a senha certa', async () => {

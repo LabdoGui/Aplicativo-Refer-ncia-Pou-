@@ -11,7 +11,9 @@ function setup() {
   const consumer = {
     on: jest.fn((type: EventType, _name: string, handler: Handler) => handlers.set(type, handler)),
   };
-  const http = { get: jest.fn(async () => [{ id: 'admin-1' }, { id: 'admin-2' }]) };
+  const http = {
+    get: jest.fn(async (): Promise<unknown> => [{ id: 'admin-1' }, { id: 'admin-2' }]),
+  };
   // Tabela falsa com a chave única (sourceEventId, userId, type).
   const stored = new Map<string, unknown>();
   const tx = {
@@ -153,5 +155,39 @@ describe('NotificationsConsumer', () => {
       tx,
     );
     expect(tx.notification.deleteMany).toHaveBeenCalledWith({ where: { userId: 'u1' } });
+  });
+
+  describe('lembrete de agendamento', () => {
+    const reminder = {
+      appointmentId: 'ap1',
+      donorId: 'd1',
+      unitName: 'Pulso Unidade Centro',
+      startsAt: '2026-10-20T12:00:00.000Z',
+    };
+
+    it('cria o lembrete para quem aceitou "Lembretes e comunicações"', async () => {
+      const { handlers, tx, http, stored } = setup();
+      http.get.mockResolvedValueOnce({ granted: ['d1'] });
+      await handlers.get(EVENTS.APPOINTMENT_REMINDER_DUE)!(
+        envelope(EVENTS.APPOINTMENT_REMINDER_DUE, reminder),
+        tx,
+      );
+      expect(http.get).toHaveBeenCalledWith(
+        'http://identity:3001',
+        '/api/v1/internal/users/communications-consent',
+        { query: { ids: 'd1' }, requestId: undefined },
+      );
+      expect(stored.size).toBe(1);
+    });
+
+    it('não cria lembrete para quem recusou ou revogou o consentimento', async () => {
+      const { handlers, tx, http, stored } = setup();
+      http.get.mockResolvedValueOnce({ granted: [] });
+      await handlers.get(EVENTS.APPOINTMENT_REMINDER_DUE)!(
+        envelope(EVENTS.APPOINTMENT_REMINDER_DUE, reminder),
+        tx,
+      );
+      expect(stored.size).toBe(0);
+    });
   });
 });

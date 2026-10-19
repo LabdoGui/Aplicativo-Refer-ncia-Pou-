@@ -174,3 +174,37 @@ describe('AttendancesService.sharedPreScreening', () => {
     await expectCode(service.sharedPreScreening(nurse, appointment.id), 'UNIT_SCOPE');
   });
 });
+
+describe('AttendancesService.byAppointment', () => {
+  const screening = (completedAt: Date | null) => ({
+    id: 'att-9',
+    appointmentId: appointment.id,
+    donorId: 'd1',
+    unitId: 'u-centro',
+    result: 'UNFIT',
+    professionalName: 'Enf. Teste',
+    createdAt: new Date('2026-01-27T12:00:00Z'),
+    completedAt,
+    donation: null,
+  });
+
+  it('atendimento antigo: mostra que terminou, sem o resultado nem a leitura auditada', async () => {
+    const { service, prisma, audit } = setup();
+    prisma.professionalScreening.findUnique.mockResolvedValueOnce(
+      screening(new Date('2026-01-27T12:30:00Z')) as never,
+    );
+    const view = await service.byAppointment(nurse, appointment.id);
+    expect(view).toMatchObject({ completed: true, result: null, professionalName: null });
+    expect(audit.record).not.toHaveBeenCalled();
+  });
+
+  it('atendimento em aberto: mostra o resultado e registra a leitura', async () => {
+    const { service, prisma, audit } = setup();
+    prisma.professionalScreening.findUnique.mockResolvedValueOnce(screening(null) as never);
+    const view = await service.byAppointment(nurse, appointment.id);
+    expect(view).toMatchObject({ completed: false, result: 'UNFIT' });
+    expect(audit.record).toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'attendance.viewed_by_staff', entityId: 'att-9' }),
+    );
+  });
+});

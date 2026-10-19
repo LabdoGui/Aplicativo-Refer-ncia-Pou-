@@ -79,11 +79,15 @@ export function DonationForm({ attendanceId, declaredBloodType }: DonationFormPr
           error={errors.volumeMl?.message}
           {...register('volumeMl', {
             required: 'Informe o volume coletado.',
-            validate: (value) => {
+            validate: (value, form) => {
               const number = Number(value);
+              if (!Number.isInteger(number) || number < 0 || number > 1000) {
+                return 'Use um número inteiro de 0 a 1000.';
+              }
               return (
-                (Number.isInteger(number) && number >= 0 && number <= 1000) ||
-                'Use um número inteiro de 0 a 1000.'
+                form.status !== 'COMPLETED' ||
+                number > 0 ||
+                'Para uma doação concluída, informe um volume maior que zero.'
               );
             },
           })}

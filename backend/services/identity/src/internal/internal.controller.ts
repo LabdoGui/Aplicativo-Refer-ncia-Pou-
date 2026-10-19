@@ -49,6 +49,24 @@ export class InternalController {
     }));
   }
 
+  /**
+   * Quem, entre os IDs, aceitou "Lembretes e comunicações" (consentimento
+   * opcional). O notification só cria lembretes para essas pessoas.
+   */
+  @Get('users/communications-consent')
+  async communicationsConsent(@Query() query: IdsQueryDto): Promise<{ granted: string[] }> {
+    const consents = await this.prisma.consent.findMany({
+      where: {
+        userId: { in: query.ids },
+        purpose: 'COMMUNICATIONS',
+        granted: true,
+        user: { status: 'ACTIVE' },
+      },
+      select: { userId: true },
+    });
+    return { granted: consents.map((consent) => consent.userId) };
+  }
+
   /** IDs das contas ativas de um papel (ex.: alertas de estoque para administradores). */
   @Get('users')
   async usersByRole(@Query() query: RoleQueryDto): Promise<Array<{ id: string }>> {

@@ -43,8 +43,10 @@ export class NotificationsConsumer implements OnModuleInit {
       'notify-appointment-rescheduled',
       messages.appointmentRescheduled,
     );
-    this.register(EVENTS.APPOINTMENT_REMINDER_DUE, 'notify-appointment-reminder', (data) =>
-      messages.appointmentReminder(data),
+    this.consumer.on<typeof EVENTS.APPOINTMENT_REMINDER_DUE, Tx>(
+      EVENTS.APPOINTMENT_REMINDER_DUE,
+      'notify-appointment-reminder',
+      (envelope, tx) => this.handleReminder(envelope, tx),
     );
     this.register(
       EVENTS.ATTENDANCE_COMPLETED,
@@ -77,6 +79,23 @@ export class NotificationsConsumer implements OnModuleInit {
         await tx.notification.deleteMany({ where: { userId: data.userId } });
       },
     );
+  }
+
+  /**
+   * Lembrete só para quem aceitou "Lembretes e comunicações" (consentimento
+   * opcional, revogável a qualquer momento). Falha no identity → nova tentativa.
+   */
+  async handleReminder(
+    envelope: EventEnvelope<typeof EVENTS.APPOINTMENT_REMINDER_DUE>,
+    tx: Tx,
+  ): Promise<void> {
+    const { granted } = await this.http.get<{ granted: string[] }>(
+      this.config.IDENTITY_URL,
+      '/api/v1/internal/users/communications-consent',
+      { query: { ids: envelope.data.donorId }, requestId: envelope.correlationId },
+    );
+    if (!granted.includes(envelope.data.donorId)) return;
+    await save(tx, envelope.id, [messages.appointmentReminder(envelope.data)]);
   }
 
   /** Alerta de estoque para cada administrador ativo (falha no identity → nova tentativa). */

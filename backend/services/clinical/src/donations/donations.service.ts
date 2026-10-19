@@ -52,6 +52,21 @@ export class DonationsService {
     dto: RecordDonationDto,
     requestId?: string,
   ): Promise<AttendanceStaffView> {
+    // Doação concluída tem volume coletado; 0 mL só faz sentido em "não concluída".
+    if (dto.status === 'COMPLETED' && dto.volumeMl <= 0) {
+      throw new AppException(
+        400,
+        'VALIDATION_ERROR',
+        'Informe o volume coletado.',
+        'Dados inválidos',
+        [
+          {
+            field: 'volumeMl',
+            message: 'Para uma doação concluída, informe um volume maior que zero.',
+          },
+        ],
+      );
+    }
     const attendance = await this.prisma.professionalScreening.findUnique({
       where: { id: dto.attendanceId },
       include: { donation: { select: { id: true } } },

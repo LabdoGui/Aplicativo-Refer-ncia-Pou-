@@ -174,11 +174,12 @@ export class AuthService {
       throw INVALID_CREDENTIALS();
     }
 
-    this.assertNotLocked(user);
+    await this.reservePasswordAttempt(user.id);
     if (!(await this.passwords.verify(user.passwordHash, dto.password))) {
-      await this.registerFailedPassword(user.id, context.requestId);
+      await this.registerFailedPassword(user.id, 'auth.login_failed', context.requestId);
       throw INVALID_CREDENTIALS();
     }
+    await this.confirmPasswordAttempt(user.id);
 
     if (user.status === 'DISABLED') {
       throw new AppException(
@@ -188,10 +189,7 @@ export class AuthService {
       );
     }
 
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: { failedLoginAttempts: 0, lockedUntil: null, lastLoginAt: new Date() },
-    });
+    await this.prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
     await this.audit.record({
       actor: { id: user.id, role: user.role },
       action: 'auth.login',
@@ -274,33 +272,47 @@ export class AuthService {
     });
   }
 
-  /** Recusa a conferência de senha enquanto a conta está bloqueada por tentativas erradas. */
-  assertNotLocked(user: Pick<User, 'lockedUntil'>): void {
-    const now = Date.now();
-    if (user.lockedUntil && user.lockedUntil.getTime() > now) {
-      const minutes = Math.ceil((user.lockedUntil.getTime() - now) / 60_000);
-      throw new AppException(
-        429,
-        'ACCOUNT_LOCKED',
-        `Muitas tentativas com senha incorreta. Tente novamente em ${minutes} minuto(s).`,
-      );
-    }
+  /**
+   * Reserva uma tentativa de senha ANTES de conferi-la (login, troca de senha e
+   * exclusão da conta). Numa única instrução, só incrementa se a conta não está
+   * bloqueada e se ainda há tentativas: requisições simultâneas também param no
+   * limite, em vez de cada uma conferir a senha com uma leitura antiga.
+   */
+  async reservePasswordAttempt(userId: string): Promise<void> {
+    const reserved = await this.prisma.$queryRaw<Array<{ failedLoginAttempts: number }>>`
+      UPDATE "users" SET "failedLoginAttempts" = "failedLoginAttempts" + 1
+       WHERE "id" = ${userId}::uuid
+         AND ("lockedUntil" IS NULL OR "lockedUntil" <= now())
+         AND "failedLoginAttempts" < ${MAX_FAILED_LOGINS}
+       RETURNING "failedLoginAttempts"`;
+    if (reserved.length === 0) throw await this.lockedError(userId);
   }
 
   /**
-   * Conta uma senha errada (login, troca de senha ou exclusão da conta). O
-   * incremento é atômico: tentativas simultâneas não se perdem, e só a que
-   * atinge o limite bloqueia a conta e registra o bloqueio.
+   * Senha certa: zera o contador, desde que nenhuma tentativa simultânea tenha
+   * bloqueado a conta nesse meio-tempo (nesse caso, nada de sessão).
    */
-  async registerFailedPassword(userId: string, requestId?: string): Promise<void> {
-    const { failedLoginAttempts } = await this.prisma.user.update({
-      where: { id: userId },
-      data: { failedLoginAttempts: { increment: 1 } },
-      select: { failedLoginAttempts: true },
-    });
-    if (failedLoginAttempts < MAX_FAILED_LOGINS) return;
+  async confirmPasswordAttempt(userId: string): Promise<void> {
     const { count } = await this.prisma.user.updateMany({
-      where: { id: userId, failedLoginAttempts: { gte: MAX_FAILED_LOGINS } },
+      where: { id: userId, OR: [{ lockedUntil: null }, { lockedUntil: { lte: new Date() } }] },
+      data: { failedLoginAttempts: 0, lockedUntil: null },
+    });
+    if (count === 0) throw await this.lockedError(userId);
+  }
+
+  /**
+   * Senha errada (a tentativa já foi contada na reserva): registra a falha na
+   * auditoria e, se o limite foi atingido, bloqueia a conta. Só uma das
+   * tentativas simultâneas bloqueia e registra o bloqueio.
+   */
+  async registerFailedPassword(userId: string, action: string, requestId?: string): Promise<void> {
+    await this.audit.record({ actor: null, action, entity: 'user', entityId: userId, requestId });
+    const { count } = await this.prisma.user.updateMany({
+      where: {
+        id: userId,
+        failedLoginAttempts: { gte: MAX_FAILED_LOGINS },
+        OR: [{ lockedUntil: null }, { lockedUntil: { lte: new Date() } }],
+      },
       data: {
         failedLoginAttempts: 0,
         lockedUntil: new Date(Date.now() + LOCK_MINUTES * 60_000),
@@ -314,6 +326,22 @@ export class AuthService {
       entityId: userId,
       requestId,
     });
+  }
+
+  private async lockedError(userId: string): Promise<AppException> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { lockedUntil: true },
+    });
+    const remainingMs = (user?.lockedUntil?.getTime() ?? 0) - Date.now();
+    const minutes = Math.max(1, Math.ceil(remainingMs / 60_000));
+    return new AppException(
+      429,
+      'ACCOUNT_LOCKED',
+      remainingMs > 0
+        ? `Muitas tentativas com senha incorreta. Tente novamente em ${minutes} minuto(s).`
+        : 'Muitas tentativas ao mesmo tempo. Aguarde alguns instantes e tente novamente.',
+    );
   }
 
   /** Revoga todas as sessões do usuário, menos (opcionalmente) a família informada. */

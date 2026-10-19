@@ -121,8 +121,12 @@ export interface AttendanceStaffView {
   appointmentId: string | null;
   donorId: string;
   unitId: string;
-  result: ScreeningResult;
-  professionalName: string;
+  /**
+   * Resultado e profissional: só enquanto o atendimento está em aberto ou foi
+   * finalizado hoje (leitura auditada). Depois disso, null.
+   */
+  result: ScreeningResult | null;
+  professionalName: string | null;
   createdAt: string;
   donation: { id: string; code: string; status: DonationStatus } | null;
   /** Atendimento finalizado (com doação registrada ou triagem sem aptidão). */
