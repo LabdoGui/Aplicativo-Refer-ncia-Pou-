@@ -1,0 +1,8 @@
+node_modules
+dist
+coverage
+backend/services/*/generated
+backend/services/*/prisma/migrations
+/docs
+*.md
+package-lock.json

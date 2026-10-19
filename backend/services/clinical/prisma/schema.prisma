@@ -1,0 +1,323 @@
+// Schema "clinical" — pré-triagem (perguntas e regras versionadas), triagem
+// profissional (atendimento), doações, documentos e configurações clínicas.
+// Respostas e valores de saúde ficam cifrados (AES-256-GCM) e nunca vão para eventos.
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider          = "postgresql"
+  url               = env("DATABASE_URL")
+  // Banco de sombra do "prisma migrate dev" (database/init/01-init.sh). Não é usado em produção.
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+}
+
+enum RuleSetStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+enum ValidationStatus {
+  PENDING_VALIDATION
+  VALIDATED
+}
+
+enum QuestionType {
+  BOOLEAN
+  SINGLE_CHOICE
+  NUMBER
+  DATE
+}
+
+enum RuleOperator {
+  EQUALS
+  NOT_EQUALS
+  LT
+  LTE
+  GT
+  GTE
+  WITHIN_DAYS
+}
+
+enum RuleSeverity {
+  INFO
+  TALK_TO_UNIT
+  WAIT_UNTIL
+}
+
+enum PreScreeningResult {
+  FAVORABLE
+  TALK_TO_UNIT
+  WAIT_UNTIL
+}
+
+enum ScreeningFieldType {
+  NUMBER
+  TEXT
+  BOOLEAN
+  SELECT
+}
+
+enum ScreeningResult {
+  FIT
+  UNFIT
+  NEEDS_EVALUATION
+}
+
+enum DonationStatus {
+  COMPLETED
+  NOT_COMPLETED
+}
+
+enum DocumentType {
+  DONATION_DECLARATION
+  ATTENDANCE_DECLARATION
+}
+
+enum BloodType {
+  A_POS
+  A_NEG
+  B_POS
+  B_NEG
+  AB_POS
+  AB_NEG
+  O_POS
+  O_NEG
+}
+
+/// Versão do questionário + regras (RN08): cada resultado guarda a versão usada.
+model ScreeningRuleSet {
+  id                 String           @id @default(uuid()) @db.Uuid
+  version            String           @unique
+  status             RuleSetStatus    @default(DRAFT)
+  validationStatus   ValidationStatus @default(PENDING_VALIDATION)
+  normativeReference String?
+  publishedAt        DateTime?        @db.Timestamptz(3)
+  createdAt          DateTime         @default(now()) @db.Timestamptz(3)
+
+  questions     ScreeningQuestion[]
+  rules         ScreeningRule[]
+  preScreenings PreScreening[]
+
+  @@map("screening_rule_sets")
+}
+
+model ScreeningQuestion {
+  id          String       @id @default(uuid()) @db.Uuid
+  ruleSetId   String       @db.Uuid
+  code        String
+  step        Int
+  order       Int
+  text        String
+  helpText    String?
+  type        QuestionType
+  options     Json?
+  required    Boolean      @default(true)
+  showIfCode  String?
+  showIfValue Json?
+  active      Boolean      @default(true)
+
+  ruleSet ScreeningRuleSet @relation(fields: [ruleSetId], references: [id], onDelete: Cascade)
+  rules   ScreeningRule[]
+
+  @@unique([ruleSetId, code])
+  @@map("screening_questions")
+}
+
+model ScreeningRule {
+  id               String           @id @default(uuid()) @db.Uuid
+  ruleSetId        String           @db.Uuid
+  questionId       String           @db.Uuid
+  operator         RuleOperator
+  value            Json
+  /// WITHIN_DAYS: dias vindos de uma configuração (ex.: donationIntervalDays).
+  settingKey       String?
+  severity         RuleSeverity
+  message          String
+  validationStatus ValidationStatus @default(PENDING_VALIDATION)
+  active           Boolean          @default(true)
+  order            Int              @default(0)
+
+  ruleSet  ScreeningRuleSet  @relation(fields: [ruleSetId], references: [id], onDelete: Cascade)
+  question ScreeningQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@map("screening_rules")
+}
+
+model PreScreening {
+  id                String             @id @default(uuid()) @db.Uuid
+  donorId           String             @db.Uuid
+  ruleSetId         String             @db.Uuid
+  /// Versão das regras no momento da avaliação (RN08): edições posteriores criam outra revisão.
+  ruleSetVersion    String?
+  result            PreScreeningResult
+  triggeredRuleIds  String[]           @db.Uuid
+  /// Orientações exibidas ao doador, cifradas (revelam informação de saúde).
+  guidanceEncrypted String
+  /// Respostas cifradas; só gravadas com o consentimento de compartilhamento (UC03).
+  answersEncrypted  String?
+  sharedWithStaff   Boolean            @default(false)
+  waitUntil         DateTime?          @db.Date
+  createdAt         DateTime           @default(now()) @db.Timestamptz(3)
+  expiresAt         DateTime           @db.Timestamptz(3)
+
+  ruleSet ScreeningRuleSet @relation(fields: [ruleSetId], references: [id])
+
+  @@index([donorId, createdAt])
+  @@map("pre_screenings")
+}
+
+/// Campos configuráveis da triagem profissional (sem limiares clínicos automáticos).
+model ProfessionalScreeningField {
+  id       String             @id @default(uuid()) @db.Uuid
+  code     String             @unique
+  label    String
+  type     ScreeningFieldType
+  unit     String?
+  options  Json?
+  helpText String?
+  required Boolean            @default(false)
+  min      Float?
+  max      Float?
+  order    Int                @default(0)
+  active   Boolean            @default(true)
+
+  @@map("professional_screening_fields")
+}
+
+/// Triagem profissional = atendimento. Finalizado quando não há doação a registrar
+/// (resultado diferente de apto) ou quando a doação é registrada.
+model ProfessionalScreening {
+  id               String          @id @default(uuid()) @db.Uuid
+  appointmentId    String?         @unique @db.Uuid
+  donorId          String          @db.Uuid
+  unitId           String          @db.Uuid
+  unitName         String
+  campaignId       String?         @db.Uuid
+  campaignTitle    String?
+  professionalId   String          @db.Uuid
+  professionalName String
+  result           ScreeningResult
+  valuesEncrypted  String
+  notesEncrypted   String?
+  completedAt      DateTime?       @db.Timestamptz(3)
+  createdAt        DateTime        @default(now()) @db.Timestamptz(3)
+
+  donation  Donation?
+  documents Document[]
+
+  @@index([donorId, createdAt])
+  @@index([unitId, createdAt])
+  @@map("professional_screenings")
+}
+
+model Donation {
+  id             String         @id @default(uuid()) @db.Uuid
+  code           String         @unique
+  attendanceId   String         @unique @db.Uuid
+  donorId        String         @db.Uuid
+  unitId         String         @db.Uuid
+  unitName       String
+  campaignId     String?        @db.Uuid
+  professionalId String         @db.Uuid
+  bloodType      BloodType
+  volumeMl       Int
+  status         DonationStatus
+  notesEncrypted String?
+  occurredAt     DateTime       @db.Timestamptz(3)
+  /// Data informativa da próxima doação (RN04), pelo intervalo configurado.
+  nextEligibleAt DateTime?      @db.Date
+  createdAt      DateTime       @default(now()) @db.Timestamptz(3)
+
+  attendance ProfessionalScreening @relation(fields: [attendanceId], references: [id])
+
+  @@index([donorId, occurredAt])
+  @@index([occurredAt])
+  @@map("donations")
+}
+
+model Document {
+  id                        String       @id @default(uuid()) @db.Uuid
+  donorId                   String       @db.Uuid
+  attendanceId              String       @db.Uuid
+  type                      DocumentType
+  title                     String
+  /// SHA-256 do código de verificação (a busca pública usa o hash).
+  verificationCodeHash      String       @unique
+  /// Código cifrado, para o titular consultar depois.
+  verificationCodeEncrypted String
+  holderInitials            String
+  unitName                  String
+  attendanceDate            DateTime     @db.Date
+  pdf                       Bytes
+  sha256                    String
+  issuedAt                  DateTime     @default(now()) @db.Timestamptz(3)
+
+  attendance ProfessionalScreening @relation(fields: [attendanceId], references: [id])
+
+  @@unique([attendanceId, type])
+  @@index([donorId, issuedAt])
+  @@map("documents")
+}
+
+model ClinicalSetting {
+  key              String            @id
+  value            Json
+  validationStatus ValidationStatus?
+  updatedById      String?           @db.Uuid
+  updatedAt        DateTime          @updatedAt @db.Timestamptz(3)
+
+  @@map("clinical_settings")
+}
+
+/// Trilha de auditoria (append-only), lida pelo gateway em /audit-logs.
+model AuditLog {
+  id        String   @id @db.Uuid
+  actorId   String?  @db.Uuid
+  actorRole String?
+  action    String
+  entity    String
+  entityId  String?
+  metadata  Json?
+  requestId String?
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+/// Outbox transacional: eventos gravados com o dado e publicados pelo OutboxRelay.
+model OutboxEvent {
+  id          String    @id @db.Uuid
+  type        String
+  payload     Json
+  occurredAt  DateTime  @db.Timestamptz(3)
+  publishedAt DateTime? @db.Timestamptz(3)
+  attempts    Int       @default(0)
+  lastError   String?
+
+  @@index([publishedAt, occurredAt])
+  @@map("outbox_events")
+}
+
+/// Idempotência do consumidor: (evento, handler) já tratados.
+model ProcessedEvent {
+  eventId     String   @db.Uuid
+  consumer    String
+  eventType   String
+  processedAt DateTime @default(now()) @db.Timestamptz(3)
+
+  @@id([eventId, consumer])
+  @@map("processed_events")
+}
+
+/// Contas excluídas (identity.user.deleted): bloqueia escritas de tokens ainda válidos.
+model DeletedUser {
+  userId    String   @id @db.Uuid
+  deletedAt DateTime @default(now()) @db.Timestamptz(3)
+
+  @@map("deleted_users")
+}

@@ -1,0 +1,64 @@
+// Schema "notification" — central de notificações in-app, alimentada por eventos.
+// RN19: mensagens automáticas nunca mencionam resultado de triagem nem dados clínicos.
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider          = "postgresql"
+  url               = env("DATABASE_URL")
+  // Banco de sombra do "prisma migrate dev" (database/init/01-init.sh). Não é usado em produção.
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+}
+
+enum NotificationType {
+  WELCOME
+  APPOINTMENT_CONFIRMED
+  APPOINTMENT_CANCELLED
+  APPOINTMENT_RESCHEDULED
+  APPOINTMENT_REMINDER
+  ATTENDANCE_COMPLETED
+  DONATION_COMPLETED
+  ACHIEVEMENT_UNLOCKED
+  POINTS_AWARDED
+  DOCUMENT_ISSUED
+  HOURS_REVIEWED
+  STOCK_ALERT
+}
+
+model Notification {
+  id            String           @id @default(uuid()) @db.Uuid
+  userId        String           @db.Uuid
+  type          NotificationType
+  title         String
+  body          String
+  link          String?
+  readAt        DateTime?        @db.Timestamptz(3)
+  sourceEventId String?          @db.Uuid
+  createdAt     DateTime         @default(now()) @db.Timestamptz(3)
+
+  @@unique([sourceEventId, userId, type])
+  @@index([userId, createdAt])
+  @@map("notifications")
+}
+
+/// Eventos já tratados por cada handler (consumidor idempotente).
+model ProcessedEvent {
+  eventId     String   @db.Uuid
+  consumer    String
+  eventType   String
+  processedAt DateTime @default(now()) @db.Timestamptz(3)
+
+  @@id([eventId, consumer])
+  @@map("processed_events")
+}
+
+/// Contas excluídas (identity.user.deleted): bloqueia escritas de tokens ainda válidos.
+model DeletedUser {
+  userId    String   @id @db.Uuid
+  deletedAt DateTime @default(now()) @db.Timestamptz(3)
+
+  @@map("deleted_users")
+}

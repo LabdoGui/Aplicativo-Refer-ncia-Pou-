@@ -1,0 +1,16 @@
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+backend/services/*/generated/
+data/
+*.log
+.DS_Store
+frontend/dist/
+test-results/
+playwright-report/
+backend/services/identity/.keys/
+e2e-ui-capturas/

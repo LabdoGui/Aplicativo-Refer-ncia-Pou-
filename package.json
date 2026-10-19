@@ -1,0 +1,45 @@
+{
+  "name": "pulso",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Pulso — plataforma de apoio à doação de sangue (projeto acadêmico, ODS 3)",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
+  "workspaces": [
+    "backend/libs/contracts",
+    "backend/libs/common",
+    "backend/gateway",
+    "backend/services/*",
+    "frontend"
+  ],
+  "scripts": {
+    "build:libs": "npm run build -w @pulso/contracts && npm run build -w @pulso/common",
+    "build": "npm run build:libs && npm run build --workspaces --if-present",
+    "typecheck": "npm run build:libs && npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "prisma:generate": "npm run prisma:generate --workspaces --if-present",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "infra:up": "docker compose up -d postgres rabbitmq",
+    "infra:down": "docker compose down",
+    "smoke": "node scripts/smoke.mjs",
+    "dev:backend": "node scripts/dev-backend.mjs",
+    "docker:up": "docker compose up --build",
+    "docker:down": "docker compose down",
+    "docker:reset": "docker compose down -v",
+    "e2e": "node scripts/e2e-journey.mjs",
+    "e2e:ui": "node scripts/e2e-ui.mjs",
+    "authz": "node scripts/authz-matrix.mjs",
+    "test:load": "node scripts/load-test.mjs",
+    "dlq:replay": "node scripts/replay-dlq.mjs"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^11.0.24",
+    "@types/node": "^22.15.0",
+    "playwright": "^1.56.1",
+    "prettier": "^3.6.2",
+    "typescript": "~5.9.3"
+  }
+}

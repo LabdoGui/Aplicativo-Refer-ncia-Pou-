@@ -1,0 +1,196 @@
+// Schema "engagement" — pontos, níveis, conquistas, ranking opt-in e horas complementares.
+// Tudo nasce de eventos do clinical (consumidor idempotente); sem prêmios materiais (RN13).
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider          = "postgresql"
+  url               = env("DATABASE_URL")
+  // Banco de sombra do "prisma migrate dev" (database/init/01-init.sh). Não é usado em produção.
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+}
+
+enum PointsBasis {
+  ATTENDANCE
+  DONATION
+}
+
+enum PointReason {
+  FIRST
+  RECURRING
+  CAMPAIGN
+}
+
+enum AchievementCriteria {
+  DONATION_COUNT
+  CAMPAIGN_DONATION
+}
+
+enum HoursStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+/// Linha única (id = 1) com os parâmetros da gamificação.
+model EngagementSettings {
+  id              Int         @id @default(1)
+  pointsBasis     PointsBasis @default(ATTENDANCE)
+  firstPoints     Int         @default(100)
+  recurringPoints Int         @default(150)
+  campaignPoints  Int         @default(50)
+  rankingEnabled  Boolean     @default(true)
+  updatedAt       DateTime    @updatedAt @db.Timestamptz(3)
+
+  @@map("engagement_settings")
+}
+
+model Achievement {
+  code        String              @id
+  name        String
+  description String
+  criteria    AchievementCriteria
+  threshold   Int
+  active      Boolean             @default(true)
+  order       Int                 @default(0)
+
+  unlocked DonorAchievement[]
+
+  @@map("achievements")
+}
+
+model DonorAchievement {
+  id              String   @id @default(uuid()) @db.Uuid
+  donorId         String   @db.Uuid
+  achievementCode String
+  sourceEventId   String?  @db.Uuid
+  unlockedAt      DateTime @db.Timestamptz(3)
+
+  achievement Achievement @relation(fields: [achievementCode], references: [code])
+
+  @@unique([donorId, achievementCode])
+  @@map("donor_achievements")
+}
+
+model PointsEntry {
+  id            String      @id @default(uuid()) @db.Uuid
+  donorId       String      @db.Uuid
+  points        Int
+  reason        PointReason
+  description   String
+  sourceEventId String?     @db.Uuid
+  createdAt     DateTime    @default(now()) @db.Timestamptz(3)
+
+  @@unique([sourceEventId, reason])
+  @@index([donorId, createdAt])
+  @@map("points_entries")
+}
+
+model DonorEngagement {
+  donorId               String    @id @db.Uuid
+  totalPoints           Int       @default(0)
+  attendanceCount       Int       @default(0)
+  donationCount         Int       @default(0)
+  /// Doações concluídas dentro de campanhas (conquista CAMPAIGN_DONATION).
+  campaignDonationCount Int       @default(0)
+  lastAttendanceAt      DateTime? @db.Timestamptz(3)
+  rankingOptIn          Boolean   @default(false)
+  /// Apelido do ranking (RN20). Único também sem diferenciar maiúsculas (índice em SQL).
+  nickname              String?   @unique
+  institutionId         String?   @db.Uuid
+  createdAt             DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt             DateTime  @updatedAt @db.Timestamptz(3)
+
+  institution PartnerInstitution? @relation(fields: [institutionId], references: [id], onDelete: SetNull)
+
+  @@index([rankingOptIn, totalPoints])
+  @@map("donor_engagement")
+}
+
+/// Instituições de ensino parceiras (fictícias). A regra de horas é da instituição (RN15).
+model PartnerInstitution {
+  id               String   @id @default(uuid()) @db.Uuid
+  name             String   @unique
+  hoursPerDonation Int
+  active           Boolean  @default(true)
+  createdAt        DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime @updatedAt @db.Timestamptz(3)
+
+  donors DonorEngagement[]
+  hours  ComplementaryHours[]
+
+  @@map("partner_institutions")
+}
+
+/// Pedido de horas criado por doação concluída; só vale depois da aprovação (RN15).
+model ComplementaryHours {
+  id            String      @id @default(uuid()) @db.Uuid
+  donorId       String      @db.Uuid
+  institutionId String      @db.Uuid
+  donationId    String      @unique @db.Uuid
+  hours         Int
+  status        HoursStatus @default(PENDING)
+  donatedAt     DateTime    @db.Timestamptz(3)
+  reviewedById  String?     @db.Uuid
+  reviewedAt    DateTime?   @db.Timestamptz(3)
+  reviewNote    String?
+  createdAt     DateTime    @default(now()) @db.Timestamptz(3)
+
+  institution PartnerInstitution @relation(fields: [institutionId], references: [id])
+
+  @@index([donorId])
+  @@index([status, createdAt])
+  @@map("complementary_hours")
+}
+
+/// Trilha de auditoria (append-only), lida pelo gateway em /audit-logs.
+model AuditLog {
+  id        String   @id @db.Uuid
+  actorId   String?  @db.Uuid
+  actorRole String?
+  action    String
+  entity    String
+  entityId  String?
+  metadata  Json?
+  requestId String?
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+/// Outbox transacional: eventos gravados com o dado e publicados pelo OutboxRelay.
+model OutboxEvent {
+  id          String    @id @db.Uuid
+  type        String
+  payload     Json
+  occurredAt  DateTime  @db.Timestamptz(3)
+  publishedAt DateTime? @db.Timestamptz(3)
+  attempts    Int       @default(0)
+  lastError   String?
+
+  @@index([publishedAt, occurredAt])
+  @@map("outbox_events")
+}
+
+/// Eventos já tratados por cada handler (consumidor idempotente).
+model ProcessedEvent {
+  eventId     String   @db.Uuid
+  consumer    String
+  eventType   String
+  processedAt DateTime @default(now()) @db.Timestamptz(3)
+
+  @@id([eventId, consumer])
+  @@map("processed_events")
+}
+
+/// Contas excluídas (identity.user.deleted): bloqueia escritas de tokens ainda válidos.
+model DeletedUser {
+  userId    String   @id @db.Uuid
+  deletedAt DateTime @default(now()) @db.Timestamptz(3)
+
+  @@map("deleted_users")
+}
