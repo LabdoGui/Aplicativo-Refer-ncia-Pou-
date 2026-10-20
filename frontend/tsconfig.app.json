@@ -28,5 +28,6 @@
       "@pulso/contracts": ["../backend/libs/contracts/src/index.ts"]
     }
   },
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": ["src/demo"]
 }
