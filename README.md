@@ -229,6 +229,7 @@ As variáveis estão documentadas no [`.env.example`](.env.example), com os mesm
 | `COOKIE_SECURE` | Flag `Secure` do cookie de sessão (`true` em produção com HTTPS) |
 | `RUN_MIGRATIONS`, `SEED_DEMO_DATA` | Migrações no boot e dados fictícios de demonstração |
 | `BOOTSTRAP_ADMIN_EMAIL`, `BOOTSTRAP_ADMIN_PASSWORD` | Sem dados de demonstração: primeiro administrador, criado no boot se ainda não houver nenhum |
+| `PUBLIC_APP_URL` | Endereço do app no link e no QR code de verificação das declarações em PDF (no Codespaces, preenchido pelo `start.sh`) |
 | `DEMO_EARLY_CHECK_IN` | Só para demonstração: check-in de agendamentos de dias futuros (jornada completa numa sessão) |
 | `INTERNAL_API_TOKEN` | Token das rotas `/internal/*` entre serviços |
 | `LOG_LEVEL` | Nível dos logs JSON |

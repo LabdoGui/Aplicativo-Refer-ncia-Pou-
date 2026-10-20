@@ -12,6 +12,13 @@ export NGINX_IMAGE="${NGINX_IMAGE:-mirror.gcr.io/library/nginx:1.27-alpine}"
 export POSTGRES_IMAGE="${POSTGRES_IMAGE:-mirror.gcr.io/library/postgres:16-alpine}"
 export RABBITMQ_IMAGE="${RABBITMQ_IMAGE:-mirror.gcr.io/library/rabbitmq:3.13-management-alpine}"
 
+url="http://localhost:8080"
+if [ -n "${CODESPACE_NAME:-}" ]; then
+  url="https://${CODESPACE_NAME}-8080.${GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN:-app.github.dev}"
+fi
+# Link e QR code de verificação das declarações em PDF apontam para o Codespace.
+export PUBLIC_APP_URL="${PUBLIC_APP_URL:-$url}"
+
 echo "▶ Pulso: aguardando o Docker do Codespace..."
 for _ in $(seq 1 60); do
   docker info >/dev/null 2>&1 && break
@@ -26,10 +33,8 @@ if ! docker compose up -d --build --wait; then
   exit 1
 fi
 
-url="http://localhost:8080"
 visibility=""
 if [ -n "${CODESPACE_NAME:-}" ]; then
-  url="https://${CODESPACE_NAME}-8080.${GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN:-app.github.dev}"
   # Link público para abrir também no celular (dados fictícios). Se a conta ou
   # a organização não permitir, o link continua valendo para quem estiver
   # logado no GitHub com a conta dona do Codespace.
