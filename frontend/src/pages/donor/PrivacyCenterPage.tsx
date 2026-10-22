@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Download, Share2, Trash2 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import type { ConsentView, PreScreeningResultView } from '@pulso/contracts';
 import { FormErrorAlert, PasswordField } from '@/components/form';
 import { Alert, Badge, Button, Card, Dialog, PageHeader, QueryState } from '@/components/ui';
@@ -220,15 +219,12 @@ function ExportCard() {
 }
 
 function DeleteAccountCard() {
-  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [password, setPassword] = useState('');
   const remove = useMutation({
     mutationFn: () => deleteAccount(password),
-    onSuccess: () => {
-      clearSession();
-      navigate('/?conta-excluida=1', { replace: true });
-    },
+    // A proteção da rota leva ao aviso de conta excluída (/?conta-excluida=1).
+    onSuccess: () => clearSession('account-deleted'),
   });
   return (
     <Card as="section" aria-labelledby="excluir" className="border-critical/30">

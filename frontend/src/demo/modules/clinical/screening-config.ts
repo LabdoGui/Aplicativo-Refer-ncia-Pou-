@@ -109,7 +109,8 @@ function updateQuestion(actor: AuthUser, id: string, input: unknown): ScreeningC
   const question = clinical().questions.find((candidate) => candidate.id === id);
   if (!question) fail(404, 'QUESTION_NOT_FOUND', 'Pergunta não encontrada.');
   if (typeof text === 'string') question.text = text;
-  if (helpText !== undefined) question.helpText = typeof helpText === 'string' && helpText ? helpText : null;
+  if (helpText !== undefined)
+    question.helpText = typeof helpText === 'string' && helpText ? helpText : null;
   if (typeof active === 'boolean') question.active = active;
   const version = bumpRevision(question.ruleSetId);
   recordAudit(SERVICE, {
@@ -127,7 +128,8 @@ function updateRule(actor: AuthUser, id: string, input: unknown): ScreeningRuleV
   const check = new Checker(body, RULE_KEYS);
   const message = trim(asString(body.message));
   const active = asBoolean(body.active);
-  if (message !== undefined && message !== null) check.string('message', message, { min: 5, max: 500 });
+  if (message !== undefined && message !== null)
+    check.string('message', message, { min: 5, max: 500 });
   if (active !== undefined && active !== null) check.boolean('active', active);
   check.done();
 
@@ -252,9 +254,13 @@ function assertFieldShape(
   max: number | null,
 ): void {
   if (type === 'SELECT' && (!options || options.length === 0)) {
-    fail(422, 'FIELD_OPTIONS_REQUIRED', 'Campos de seleção precisam de opções.', UNPROCESSABLE_TITLE, [
-      { field: 'options', message: 'Informe ao menos uma opção.' },
-    ]);
+    fail(
+      422,
+      'FIELD_OPTIONS_REQUIRED',
+      'Campos de seleção precisam de opções.',
+      UNPROCESSABLE_TITLE,
+      [{ field: 'options', message: 'Informe ao menos uma opção.' }],
+    );
   }
   if (options && new Set(options.map((o) => o.value)).size !== options.length) {
     fail(
@@ -265,9 +271,13 @@ function assertFieldShape(
     );
   }
   if (min !== null && max !== null && min > max) {
-    fail(422, 'FIELD_RANGE_INVALID', 'O mínimo não pode ser maior que o máximo.', UNPROCESSABLE_TITLE, [
-      { field: 'min', message: 'O mínimo não pode ser maior que o máximo.' },
-    ]);
+    fail(
+      422,
+      'FIELD_RANGE_INVALID',
+      'O mínimo não pode ser maior que o máximo.',
+      UNPROCESSABLE_TITLE,
+      [{ field: 'min', message: 'O mínimo não pode ser maior que o máximo.' }],
+    );
   }
 }
 

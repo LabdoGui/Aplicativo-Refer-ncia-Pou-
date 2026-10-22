@@ -192,7 +192,13 @@ function submit(actor: AuthUser, input: unknown): PreScreeningResultView {
   const today = todayLocal();
   const { answers, errors } = sanitizeAnswers(questions, dto.answers, today);
   if (errors.length > 0) {
-    fail(400, 'VALIDATION_ERROR', 'Algumas respostas precisam de correção.', 'Dados inválidos', errors);
+    fail(
+      400,
+      'VALIDATION_ERROR',
+      'Algumas respostas precisam de correção.',
+      'Dados inválidos',
+      errors,
+    );
   }
   const settings = getSettings();
   const evaluation = evaluateRules(

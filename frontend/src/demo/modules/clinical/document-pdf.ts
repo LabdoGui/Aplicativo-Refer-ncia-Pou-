@@ -123,10 +123,15 @@ export async function renderDocumentPdf(
   doc.line(MARGIN, footerY, pageWidth - MARGIN, footerY);
   doc.setTextColor(MUTED).setFontSize(9);
   doc.text(DOCUMENT_DISCLAIMER, pageWidth / 2, footerY + 12, { ...top, align: 'center' });
-  doc.text('Este documento não contém informações clínicas.', pageWidth / 2, footerY + 12 + 9 * LINE, {
-    ...top,
-    align: 'center',
-  });
+  doc.text(
+    'Este documento não contém informações clínicas.',
+    pageWidth / 2,
+    footerY + 12 + 9 * LINE,
+    {
+      ...top,
+      align: 'center',
+    },
+  );
 
   const pdf = new Uint8Array(doc.output('arraybuffer'));
   return { pdf, sha256: bytesToHex(sha256(pdf)) };

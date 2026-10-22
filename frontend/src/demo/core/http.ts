@@ -33,14 +33,18 @@ export class DemoHttpError extends Error {
   }
 }
 
+/** Mesmos títulos padrão do ProblemDetailsFilter do back-end. */
 const DEFAULT_TITLES: Record<number, string> = {
   400: 'Requisição inválida',
-  401: 'Não autenticado',
+  401: 'Autenticação necessária',
   403: 'Acesso negado',
   404: 'Não encontrado',
   409: 'Conflito',
-  422: 'Não foi possível concluir',
+  413: 'Conteúdo grande demais',
+  415: 'Formato não suportado',
+  422: 'Operação não permitida',
   429: 'Muitas tentativas',
+  503: 'Serviço indisponível',
 };
 
 /** Mesma assinatura do AppException do back-end: (status, código, detalhe, título?, erros?). */
@@ -153,21 +157,25 @@ export function isApiUrl(url: URL): boolean {
   return url.pathname === API_BASE || url.pathname.startsWith(`${API_BASE}/`);
 }
 
+/** Mesmo formato do ProblemDetailsFilter: type por código, instance com a query e requestId. */
 function problem(
   status: number,
   code: string,
   title: string,
   detail: string,
-  path: string,
+  url: URL,
   errors?: FieldIssue[],
 ): Response {
   const body: ProblemDetails = {
-    type: 'about:blank',
+    type: `https://pulso.local/problems/${code.toLowerCase().replace(/_/g, '-')}`,
     title,
     status,
     detail,
-    instance: `${API_BASE}${path}`,
+    instance: `${url.pathname}${url.search}`,
     code,
+    requestId: crypto
+      .getRandomValues(new Uint32Array(4))
+      .reduce((id, n) => id + n.toString(16).padStart(8, '0'), ''),
     ...(errors?.length ? { errors } : {}),
   };
   return new Response(JSON.stringify(body), {
@@ -189,7 +197,7 @@ export async function handle(url: URL, init: RequestInit): Promise<Response> {
       'ROUTE_NOT_FOUND',
       'Não encontrado',
       `Rota ${method} ${path} inexistente.`,
-      path,
+      url,
     );
   }
   const match = candidates.find((candidate) => candidate.method === method);
@@ -199,7 +207,7 @@ export async function handle(url: URL, init: RequestInit): Promise<Response> {
       'METHOD_NOT_ALLOWED',
       'Método não permitido',
       `Método ${method} não aceito em ${path}.`,
-      path,
+      url,
     );
   }
 
@@ -214,23 +222,38 @@ export async function handle(url: URL, init: RequestInit): Promise<Response> {
   const options = match.options;
   if (options.auth !== 'public' || options.roles || options.permissions) {
     if (!user) {
-      return problem(
-        401,
-        'UNAUTHENTICATED',
-        'Não autenticado',
-        'Sessão expirada ou inválida. Entre novamente.',
-        path,
-      );
+      return token
+        ? problem(
+            401,
+            'TOKEN_INVALID',
+            DEFAULT_TITLES[401],
+            'Sua sessão expirou. Entre novamente.',
+            url,
+          )
+        : problem(
+            401,
+            'AUTH_REQUIRED',
+            DEFAULT_TITLES[401],
+            'Entre na sua conta para continuar.',
+            url,
+          );
     }
-    const roleOk = !options.roles || options.roles.includes(user.role);
-    const permissionsOk = (options.permissions ?? []).every((p) => hasPermission(user.role, p));
-    if (!roleOk || !permissionsOk) {
+    if (options.roles && !options.roles.includes(user.role)) {
       return problem(
         403,
-        'FORBIDDEN',
-        'Acesso negado',
-        'Você não tem permissão para esta ação.',
-        path,
+        'FORBIDDEN_ROLE',
+        DEFAULT_TITLES[403],
+        'Seu perfil não tem acesso a esta área.',
+        url,
+      );
+    }
+    if ((options.permissions ?? []).some((p) => !hasPermission(user.role, p))) {
+      return problem(
+        403,
+        'FORBIDDEN_PERMISSION',
+        DEFAULT_TITLES[403],
+        'Você não tem permissão para realizar esta ação.',
+        url,
       );
     }
   }
@@ -245,7 +268,7 @@ export async function handle(url: URL, init: RequestInit): Promise<Response> {
         'INVALID_JSON',
         'Requisição inválida',
         'O corpo da requisição não é um JSON válido.',
-        path,
+        url,
       );
     }
   }
@@ -279,15 +302,15 @@ export async function handle(url: URL, init: RequestInit): Promise<Response> {
     });
   } catch (error) {
     if (error instanceof DemoHttpError) {
-      return problem(error.status, error.code, error.title, error.message, path, error.errors);
+      return problem(error.status, error.code, error.title, error.message, url, error.errors);
     }
     console.error('[demo] erro inesperado em', method, path, error);
     return problem(
       500,
       'INTERNAL_ERROR',
-      'Erro interno',
+      'Erro inesperado',
       'Não foi possível concluir a operação agora. Tente novamente em instantes.',
-      path,
+      url,
     );
   } finally {
     if (method !== 'GET') afterRequest();

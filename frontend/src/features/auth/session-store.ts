@@ -11,7 +11,7 @@ export interface SessionState {
   status: SessionStatus;
   user: SessionUser | null;
   /** Motivo da última saída involuntária (exibido na tela de login). */
-  endedReason: 'expired' | null;
+  endedReason: 'expired' | 'account-deleted' | null;
 }
 
 let state: SessionState = { status: 'loading', user: null, endedReason: null };

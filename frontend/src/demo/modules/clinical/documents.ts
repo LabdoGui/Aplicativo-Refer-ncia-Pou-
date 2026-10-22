@@ -177,7 +177,9 @@ function verify(code: string): DocumentVerification {
   const canonical = canonicalCode(code);
   if (!canonical) return INVALID;
   const hash = hashVerificationCode(canonical);
-  const document = clinical().documents.find((candidate) => candidate.verificationCodeHash === hash);
+  const document = clinical().documents.find(
+    (candidate) => candidate.verificationCodeHash === hash,
+  );
   if (!document) return INVALID;
   return {
     valid: true,

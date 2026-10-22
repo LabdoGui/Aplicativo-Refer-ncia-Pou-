@@ -14,7 +14,7 @@ interface RequireRoleProps {
  * usar: quem decide de verdade é a API (token, papel, escopo e posse do recurso).
  */
 export function RequireRole({ roles, children }: RequireRoleProps) {
-  const { status, user } = useSession();
+  const { status, user, endedReason } = useSession();
   const location = useLocation();
 
   if (status === 'loading') {
@@ -25,6 +25,10 @@ export function RequireRole({ roles, children }: RequireRoleProps) {
         </span>
       </div>
     );
+  }
+  // Conta excluída pela própria pessoa: vai para o aviso na página inicial, não para o login.
+  if (!user && endedReason === 'account-deleted') {
+    return <Navigate to="/?conta-excluida=1" replace />;
   }
   if (!user) {
     const redirect = `${location.pathname}${location.search}`;

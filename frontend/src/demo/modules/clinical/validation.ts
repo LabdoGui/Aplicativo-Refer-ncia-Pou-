@@ -21,7 +21,12 @@ export const isUuidV4 = (value: unknown): value is string =>
 /** ParseUUIDPipe: parâmetro de rota que não é UUID vira 400 genérico (mensagem do Nest oculta). */
 export function uuidParam(value: string): string {
   if (!isUuid(value)) {
-    fail(400, 'BAD_REQUEST', 'Verifique os dados informados e tente novamente.', 'Requisição inválida');
+    fail(
+      400,
+      'BAD_REQUEST',
+      'Verifique os dados informados e tente novamente.',
+      'Requisição inválida',
+    );
   }
   return value;
 }
@@ -99,7 +104,8 @@ export class Checker {
   }
 
   oneOf(field: string, value: unknown, allowed: readonly string[]) {
-    if (typeof value !== 'string' || !allowed.includes(value)) this.add(field, 'Valor não permitido.');
+    if (typeof value !== 'string' || !allowed.includes(value))
+      this.add(field, 'Valor não permitido.');
   }
 
   object(field: string, value: unknown) {
@@ -130,6 +136,11 @@ export function bodyOf(body: unknown): Record<string, unknown> {
  */
 export function assertCanWrite(user: AuthUser): void {
   if (clinical().deletedUsers.includes(user.id)) {
-    fail(401, 'SESSION_EXPIRED', 'Sua sessão foi encerrada. Entre novamente.', 'Autenticação necessária');
+    fail(
+      401,
+      'SESSION_EXPIRED',
+      'Sua sessão foi encerrada. Entre novamente.',
+      'Autenticação necessária',
+    );
   }
 }

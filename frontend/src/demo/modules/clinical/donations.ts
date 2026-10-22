@@ -89,7 +89,10 @@ function record(actor: AuthUser, input: unknown): AttendanceStaffView {
   // Doação concluída tem volume coletado; 0 mL só faz sentido em "não concluída".
   if (dto.status === 'COMPLETED' && dto.volumeMl <= 0) {
     fail(400, 'VALIDATION_ERROR', 'Informe o volume coletado.', 'Dados inválidos', [
-      { field: 'volumeMl', message: 'Para uma doação concluída, informe um volume maior que zero.' },
+      {
+        field: 'volumeMl',
+        message: 'Para uma doação concluída, informe um volume maior que zero.',
+      },
     ]);
   }
   const state = clinical();
@@ -209,13 +212,17 @@ function attendance(actor: AuthUser, attendanceId: string): DonorAttendanceView 
 function eligibility(actor: AuthUser): EligibilityView {
   const settings = getSettings();
   const last = clinical()
-    .donations.filter((donation) => donation.donorId === actor.id && donation.status === 'COMPLETED')
+    .donations.filter(
+      (donation) => donation.donorId === actor.id && donation.status === 'COMPLETED',
+    )
     .sort((a, b) => b.occurredAt.localeCompare(a.occurredAt))[0];
   const now = Date.now();
   const preScreening = preScreeningsOf(actor.id).find(
     (candidate) => Date.parse(candidate.expiresAt) > now,
   );
-  const fromDonation = last ? nextEligibleDate(last.occurredAt, settings.donationIntervalDays) : null;
+  const fromDonation = last
+    ? nextEligibleDate(last.occurredAt, settings.donationIntervalDays)
+    : null;
   const fromPreScreening = preScreening?.waitUntil ?? null;
   const usePreScreening =
     fromPreScreening !== null && (fromDonation === null || fromPreScreening > fromDonation);
@@ -240,7 +247,11 @@ function adminList(query: URLSearchParams): Paginated<AdminDonationItem> {
   const check = new Checker(params, ADMIN_QUERY_KEYS);
   for (const key of ['page', 'pageSize'] as const) {
     if (params[key] !== undefined) {
-      check.number(key, Number(params[key]), { int: true, min: 1, max: key === 'pageSize' ? 100 : undefined });
+      check.number(key, Number(params[key]), {
+        int: true,
+        min: 1,
+        max: key === 'pageSize' ? 100 : undefined,
+      });
     }
   }
   for (const key of ['from', 'to'] as const) {
@@ -272,19 +283,17 @@ function adminList(query: URLSearchParams): Paginated<AdminDonationItem> {
       );
     })
     .sort((a, b) => b.occurredAt.localeCompare(a.occurredAt))
-    .map(
-      (row): AdminDonationItem => ({
-        id: row.id,
-        code: row.code,
-        status: row.status,
-        bloodType: row.bloodType,
-        volumeMl: row.volumeMl,
-        unitId: row.unitId,
-        unitName: row.unitName,
-        occurredAt: row.occurredAt,
-        campaignTitle: attendances.get(row.attendanceId)?.campaignTitle ?? null,
-      }),
-    );
+    .map((row): AdminDonationItem => ({
+      id: row.id,
+      code: row.code,
+      status: row.status,
+      bloodType: row.bloodType,
+      volumeMl: row.volumeMl,
+      unitId: row.unitId,
+      unitName: row.unitName,
+      occurredAt: row.occurredAt,
+      campaignTitle: attendances.get(row.attendanceId)?.campaignTitle ?? null,
+    }));
   return paginate(rows, query);
 }
 

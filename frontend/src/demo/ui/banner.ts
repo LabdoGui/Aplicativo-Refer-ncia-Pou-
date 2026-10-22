@@ -12,29 +12,45 @@ export function mountDemoBanner(): void {
     'left:50%',
     'transform:translateX(-50%)',
     'bottom:calc(76px + env(safe-area-inset-bottom))',
+    'white-space:nowrap',
     'z-index:60',
     'display:flex',
     'align-items:center',
     'gap:8px',
     'max-width:calc(100vw - 24px)',
-    'padding:6px 6px 6px 12px',
+    'padding:4px 4px 4px 12px',
     'border-radius:999px',
     'background:rgba(28,25,23,.92)',
     'color:#fff',
     'font:500 12px/1.3 Inter Variable, system-ui, sans-serif',
+    'opacity:.94',
     'box-shadow:0 4px 16px rgba(0,0,0,.18)',
   ].join(';');
 
   const text = document.createElement('span');
-  text.textContent = 'Demonstração · dados fictícios, só neste aparelho';
+  text.textContent = 'Demonstração · dados fictícios';
+  text.title = 'Tudo fica só neste aparelho; nada é enviado a servidores.';
 
   const reset = document.createElement('button');
   reset.type = 'button';
   reset.textContent = 'Recomeçar';
   reset.style.cssText =
     'border:0;border-radius:999px;padding:4px 10px;background:#fff;color:#1c1917;font:600 12px/1.3 inherit;cursor:pointer';
+  // Confirmação no próprio aviso: alguns visualizadores bloqueiam window.confirm().
+  let armed = false;
   reset.addEventListener('click', () => {
-    if (window.confirm('Apagar tudo o que foi feito na demonstração e recomeçar?')) resetDemo();
+    if (armed) {
+      resetDemo();
+      return;
+    }
+    armed = true;
+    text.textContent = 'Apagar o que foi feito?';
+    reset.textContent = 'Sim, recomeçar';
+    window.setTimeout(() => {
+      armed = false;
+      text.textContent = 'Demonstração · dados fictícios';
+      reset.textContent = 'Recomeçar';
+    }, 5000);
   });
 
   const close = document.createElement('button');
