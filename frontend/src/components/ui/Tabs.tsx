@@ -46,7 +46,7 @@ export function Tabs<T extends string>({ label, items, value, onChange }: TabsPr
       <div
         role="tablist"
         aria-label={label}
-        className="flex gap-1 overflow-x-auto border-b border-line"
+        className="relative flex gap-1 overflow-x-auto border-b border-line"
       >
         {items.map((item, index) => {
           const selected = item.value === value;

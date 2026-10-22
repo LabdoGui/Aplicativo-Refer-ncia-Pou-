@@ -133,6 +133,18 @@ Por que 6 serviços e não 11, como os eventos fluem e as decisões tomadas: [do
 
 O Codespace desliga sozinho depois de 30 minutos sem uso e o link para de abrir. Para religar, abra o Codespace de novo pela página do repositório (**Code → Codespaces**): o app volta em menos de um minuto, com os mesmos dados. Para não gastar as horas gratuitas, apague o Codespace quando não precisar mais dele.
 
+### Demonstração no navegador (sem servidor)
+
+Para mostrar o app num celular sem subir nada, existe uma demonstração em um **único arquivo HTML**: o mesmo front-end, com um servidor simulado dentro da própria página ([`frontend/src/demo`](frontend/src/demo)) que responde às rotas `/api/v1` com os mesmos dados fictícios do seed e as mesmas regras do back-end (pré-triagem, agenda, triagem, doação, pontos, conquistas, estoque, notificações, auditoria).
+
+```bash
+npm ci
+npm run build:demo -w @pulso/frontend   # gera frontend/dist-demo/demo.html (~2,6 MB)
+npm run dev:demo -w @pulso/frontend     # ou: versão de desenvolvimento em /demo.html
+```
+
+O arquivo abre com dois cliques no navegador ou publicado em qualquer hospedagem estática; as rotas ficam depois do `#` (ex.: `demo.html#/admin`). As contas de demonstração são as mesmas. O que a pessoa faz fica só naquele aparelho (localStorage), recomeça a cada dia e pode ser apagado pelo botão **Recomeçar** do aviso. A jornada de 22 passos roda também na demonstração (`BASE_URL=http://localhost:4173/demo.html npm run e2e:ui`, com `npx vite preview --mode demo` em `frontend/`), e o CI a executa a cada push. O build normal do app (`npm run build`) não inclui nada da demonstração.
+
 ### No seu computador
 
 ```bash
