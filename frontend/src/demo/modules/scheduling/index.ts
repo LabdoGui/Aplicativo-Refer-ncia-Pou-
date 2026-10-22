@@ -1,15 +1,23 @@
-/** Módulo scheduling da demonstração (espelho do scheduling-service). */
-import type { SeedContext } from '../../core/state';
+/**
+ * Módulo scheduling da demonstração (espelho do scheduling-service): unidades,
+ * grade, bloqueios, disponibilidade, agendamentos, agenda da equipe e campanhas.
+ */
+import { registerAgendaRoutes } from './agenda';
+import { registerAppointmentRoutes } from './appointments';
+import { registerCampaignRoutes } from './campaigns';
+import { registerIntegration } from './integration';
+import { startJobs } from './jobs';
+import { registerUnitRoutes } from './units';
 
-export interface SchedulingState {
-  // Preenchido pelo módulo.
-  placeholder?: never;
-}
-
-export function seedScheduling(_ctx: SeedContext): SchedulingState {
-  return {};
-}
+export type { SchedulingState } from './model';
+export { seedScheduling } from './seed';
 
 export function registerScheduling(): void {
-  // Rotas, assinaturas de eventos e funções internas.
+  registerUnitRoutes();
+  registerAppointmentRoutes();
+  registerAgendaRoutes();
+  registerCampaignRoutes();
+  registerIntegration();
+  // Agendamentos vencidos e lembretes: ao abrir e depois periodicamente.
+  startJobs();
 }
