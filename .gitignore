@@ -15,3 +15,6 @@ test-results/
 playwright-report/
 backend/services/identity/.keys/
 e2e-ui-capturas/
+
+# Scripts temporários de teste (Playwright), apagados depois do uso
+scripts/.tmp-*.mjs
