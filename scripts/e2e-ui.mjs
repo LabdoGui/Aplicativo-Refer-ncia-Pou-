@@ -30,8 +30,8 @@ const BASE_URL = (process.env.BASE_URL ?? 'http://localhost:8080').replace(/\/$/
 const DEMO = BASE_URL.endsWith('.html');
 /** Endereço de uma rota do app (na demonstração, depois do #). */
 const to = (path) => (DEMO ? `${BASE_URL}#${path}` : `${BASE_URL}${path}`);
-/** Rota atual do app a partir da URL da página. */
-const routeOf = (url) => (DEMO ? url.hash.slice(1) || '/' : url.pathname);
+/** Rota atual do app a partir da URL da página (sem a query). */
+const routeOf = (url) => (DEMO ? url.hash.slice(1).split('?')[0] || '/' : url.pathname);
 const SHOTS = process.env.E2E_SCREENSHOTS;
 const DEMO_PASSWORD = 'Pulso@2026';
 const DONOR_PASSWORD = 'Senha1234';
