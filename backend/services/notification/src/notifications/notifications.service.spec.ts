@@ -6,7 +6,7 @@ const row = (overrides: Record<string, unknown> = {}) => ({
   id: 'n1',
   userId: USER,
   type: 'WELCOME',
-  title: 'Boas-vindas ao Pulso',
+  title: 'Boas-vindas ao SangueConecta',
   body: 'Olá!',
   link: '/app',
   readAt: null,

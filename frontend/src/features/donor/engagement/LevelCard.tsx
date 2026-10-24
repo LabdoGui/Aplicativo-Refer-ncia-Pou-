@@ -55,7 +55,7 @@ export function LevelCard({ profile }: { profile: GamificationProfile }) {
           </p>
         </div>
       ) : (
-        <p className="mt-6 text-sm text-ink">Você chegou ao nível mais alto do Pulso.</p>
+        <p className="mt-6 text-sm text-ink">Você chegou ao nível mais alto do SangueConecta.</p>
       )}
 
       <ol aria-label="Níveis" className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-4">

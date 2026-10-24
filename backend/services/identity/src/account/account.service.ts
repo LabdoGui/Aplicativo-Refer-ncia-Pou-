@@ -143,7 +143,7 @@ export class AccountService {
           throw new AppException(
             422,
             'CONSENT_REQUIRED',
-            'O aceite dos Termos de Uso é necessário para usar o Pulso. Para retirá-lo, exclua sua conta.',
+            'O aceite dos Termos de Uso é necessário para usar o SangueConecta. Para retirá-lo, exclua sua conta.',
           );
         }
         const current = await tx.consent.findUnique({
@@ -196,7 +196,7 @@ export class AccountService {
       account,
       consents,
       notice:
-        'Cópia dos dados de cadastro guardados pelo Pulso (identidade e consentimentos). Agendamentos, atendimentos e conquistas aparecem nas respectivas telas do app.',
+        'Cópia dos dados de cadastro guardados pelo SangueConecta (identidade e consentimentos). Agendamentos, atendimentos e conquistas aparecem nas respectivas telas do app.',
     };
   }
 

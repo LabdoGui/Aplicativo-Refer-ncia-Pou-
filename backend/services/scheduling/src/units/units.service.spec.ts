@@ -18,7 +18,7 @@ function setup(affected: Array<{ id: string; slotId: string }>, updated = 1) {
           ...item,
           donorId: `donor-${item.id}`,
           startsAt: new Date(Date.now() + 2 * 86_400_000),
-          unit: { name: 'Pulso Unidade Centro' },
+          unit: { name: 'SangueConecta Unidade Centro' },
         })),
       ),
       updateMany: jest.fn(async () => ({ count: updated })),

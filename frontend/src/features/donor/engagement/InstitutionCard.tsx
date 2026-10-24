@@ -139,7 +139,7 @@ export function InstitutionCard({ hours }: { hours: MyHoursResponse }) {
 
       <ul className="mt-5 list-disc space-y-1 border-t border-line pt-4 pl-5 text-sm text-ink-muted">
         <li>As horas só contam depois que a instituição aprova o pedido.</li>
-        <li>Quantas horas cada doação vale é regra da instituição, não do Pulso.</li>
+        <li>Quantas horas cada doação vale é regra da instituição, não do SangueConecta.</li>
         <li>
           O vínculo vale para as próximas doações concluídas. Pedidos já criados continuam com a
           instituição original.

@@ -1,4 +1,4 @@
-# Frontend do Pulso: compila a SPA (Vite) e a serve com nginx sem root na porta 8080.
+# Frontend do SangueConecta: compila a SPA (Vite) e a serve com nginx sem root na porta 8080.
 # O nginx também encaminha /api/ ao gateway (veja docker/nginx.conf).
 #
 # NODE_IMAGE e NGINX_IMAGE podem ser trocadas por quem sofre com o limite do

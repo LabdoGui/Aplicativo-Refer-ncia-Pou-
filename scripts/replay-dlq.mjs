@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Reprocessa a fila de mensagens mortas (DLQ) de um serviço do Pulso.
+ * Reprocessa a fila de mensagens mortas (DLQ) de um serviço do SangueConecta.
  *
  * Um evento vai para a DLQ quando o consumidor esgota as tentativas (cerca de
  * 36 minutos em escada). Corrigida a causa, este script devolve as mensagens à

@@ -27,7 +27,7 @@ concurrency:
 
 jobs:
   devcontainer:
-    name: Devcontainer sobe o Pulso
+    name: Devcontainer sobe o SangueConecta
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:

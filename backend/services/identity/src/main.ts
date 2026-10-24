@@ -5,7 +5,7 @@ import { AppModule } from './app.module';
 void bootstrapService({
   module: AppModule,
   swagger: {
-    title: 'Pulso — identity-service',
+    title: 'SangueConecta — identity-service',
     description: 'Autenticação, contas, perfis de doador e de profissional, consentimentos (LGPD).',
   },
 });

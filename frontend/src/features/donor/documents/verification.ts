@@ -20,4 +20,4 @@ const FILE_KIND: Record<DocumentType, string> = {
 
 /** Nome sugerido para o download (o mesmo padrão do servidor). */
 export const documentFileName = (document: Pick<DocumentView, 'type' | 'issuedAt'>): string =>
-  `pulso-${FILE_KIND[document.type]}-${toIsoDate(document.issuedAt)}.pdf`;
+  `sangueconecta-${FILE_KIND[document.type]}-${toIsoDate(document.issuedAt)}.pdf`;

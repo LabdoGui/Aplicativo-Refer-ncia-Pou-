@@ -257,7 +257,7 @@ function toEntry(
 
 /**
  * Top 10 de quem optou por participar, por pontos (desempate: quem entrou no
- * Pulso antes). Posições no estilo competição (1, 2, 2, 4).
+ * SangueConecta antes). Posições no estilo competição (1, 2, 2, 4).
  */
 function ranking(donorId: string): RankingResponse {
   const engagement = state();

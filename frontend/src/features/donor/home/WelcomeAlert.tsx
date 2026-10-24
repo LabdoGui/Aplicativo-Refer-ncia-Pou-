@@ -27,7 +27,7 @@ export function WelcomeAlert() {
     <LiveMessage>
       <Alert
         tone="ok"
-        title="Boas-vindas ao Pulso!"
+        title="Boas-vindas ao SangueConecta!"
         className="mb-6"
         actions={
           <Button variant="ghost" size="sm" onClick={() => setVisible(false)}>

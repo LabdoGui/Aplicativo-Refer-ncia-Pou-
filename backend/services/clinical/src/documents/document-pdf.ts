@@ -50,8 +50,8 @@ export async function renderDocumentPdf(
     size: 'A4',
     margin: 56,
     info: {
-      Title: `${title} — Pulso`,
-      Author: 'Pulso (protótipo acadêmico)',
+      Title: `${title} — SangueConecta`,
+      Author: 'SangueConecta (protótipo acadêmico)',
       Subject: title,
       CreationDate: input.issuedAt,
       ModDate: input.issuedAt,
@@ -66,8 +66,12 @@ export async function renderDocumentPdf(
 
   const width = doc.page.width - 112;
   doc.rect(0, 0, doc.page.width, 8).fill(BRAND);
-  doc.fillColor(BRAND).font('Helvetica-Bold').fontSize(26).text('Pulso', 56, 48);
-  doc.fillColor(MUTED).font('Helvetica').fontSize(10).text('Doe sangue. Mantenha a vida pulsando.');
+  doc.fillColor(BRAND).font('Helvetica-Bold').fontSize(26).text('SangueConecta', 56, 48);
+  doc
+    .fillColor(MUTED)
+    .font('Helvetica')
+    .fontSize(10)
+    .text('Conectando doadores a vidas que precisam de ajuda.');
 
   doc.moveDown(3);
   doc.fillColor(INK).font('Helvetica-Bold').fontSize(20).text(title, { width, align: 'center' });

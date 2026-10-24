@@ -50,7 +50,7 @@ const CONSENT_PURPOSES = [
   'Aceitar os termos de uso e esta política de privacidade (necessário para criar a conta).',
   'Compartilhar as respostas da pré-triagem com a equipe da unidade (escolhido a cada envio).',
   'Aparecer no ranking, só com um apelido.',
-  'Receber lembretes e comunicações do Pulso.',
+  'Receber lembretes e comunicações do SangueConecta.',
 ];
 
 function Section({ id, title, children }: { id: string; title: string; children: ReactNode }) {
@@ -81,12 +81,12 @@ export function PrivacyPage() {
       <PageHeader
         eyebrow="LGPD"
         title="Privacidade e consentimento"
-        description="Um resumo, em linguagem simples, de como o Pulso trata os seus dados pessoais, de acordo com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018)."
+        description="Um resumo, em linguagem simples, de como o SangueConecta trata os seus dados pessoais, de acordo com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018)."
       />
 
       <Alert tone="warn" title="Projeto acadêmico com dados fictícios" className="mb-10">
-        O Pulso é um projeto acadêmico alinhado ao ODS 3. Todos os dados exibidos são fictícios: não
-        informe dados reais de saúde ao testar a plataforma.
+        O SangueConecta é um projeto acadêmico alinhado ao ODS 3. Todos os dados exibidos são
+        fictícios: não informe dados reais de saúde ao testar a plataforma.
       </Alert>
 
       <div className="space-y-10">
@@ -108,7 +108,8 @@ export function PrivacyPage() {
           <p>
             A LGPD classifica dados de saúde como{' '}
             <strong className="text-ink">dados pessoais sensíveis</strong>, que exigem proteção
-            reforçada. No Pulso, as respostas da pré-triagem e os dados da triagem presencial:
+            reforçada. No SangueConecta, as respostas da pré-triagem e os dados da triagem
+            presencial:
           </p>
           <BulletList items={HEALTH_DATA_SAFEGUARDS} />
         </Section>

@@ -21,7 +21,7 @@ function configure(app: NestExpressApplication): void {
   const gatewayDocument = SwaggerModule.createDocument(
     app,
     new DocumentBuilder()
-      .setTitle('Pulso — gateway')
+      .setTitle('SangueConecta — gateway')
       .setVersion(config.SERVICE_VERSION)
       .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT' })
       .build(),

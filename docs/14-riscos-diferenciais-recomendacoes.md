@@ -36,7 +36,7 @@ Escala: **P** = probabilidade, **I** = impacto (B = baixo, M = médio, A = alto)
 | R-J4 | Envio de documento ao RH expõe dados sem controle do titular | M | M | Sem integração direta: o doador compartilha um link com prazo de expiração e revogável |
 | R-J5 | Nome ou marca já registrados por terceiros | M | B | Pesquisa no INPI antes de publicar |
 | R-J6 | Uso indevido de emblemas protegidos (cruz vermelha) | B | M | Proibido no guia de marca |
-| R-J7 | Termos como "bolsa de valores" ou "cotação" sugerem comercialização do sangue | M | M | Na interface, usar "Pulso do Estoque" e "nível". A metáfora fica só na explicação da visualização |
+| R-J7 | Termos como "bolsa de valores" ou "cotação" sugerem comercialização do sangue | M | M | Na interface, usar "SangueConecta do Estoque" e "nível". A metáfora fica só na explicação da visualização |
 
 ### Relacionados à saúde
 
@@ -60,7 +60,7 @@ Escala: **P** = probabilidade, **I** = impacto (B = baixo, M = médio, A = alto)
 
 ---
 
-## PARTE 29 — O que diferencia o Pulso de "um app de agendamento"
+## PARTE 29 — O que diferencia o SangueConecta de "um app de agendamento"
 
 | Elemento | Por que diferencia | Honestidade: o que já existe | Como medir |
 |---|---|---|---|
@@ -69,7 +69,7 @@ Escala: **P** = probabilidade, **I** = impacto (B = baixo, M = médio, A = alto)
 | **Experiência do doador de ponta a ponta** | Uma jornada só: descobrir → agendar → doar → agradecer → voltar | Soluções costumam cobrir só parte da jornada [HIPÓTESE: confirmar no benchmarking] | SUS (System Usability Scale) em teste com usuários; tempo para agendar |
 | **Gamificação ética** | Recompensa **participação**, não resultado clínico; sem prêmios materiais; ranking opcional; **metas coletivas** | Há apps gamificados (Pontos de Vida, Hemo4Play), com evidência ainda limitada (Johnson et al., 2016) | Taxa de retorno; percepção de pressão no questionário |
 | **Integração com instituições de ensino** | Fluxo de horas complementares com **aprovação da instituição** + campanhas por turma | Depende de convênio | Pedidos aprovados; doações por campanha |
-| **Estoque conectado à mobilização** | O "Pulso do Estoque" mostra criticidade e tendência; na V2, alerta doadores que consentiram | Alguns hemocentros divulgam níveis [HIPÓTESE: levantar quais] | Tempo entre o alerta crítico e a recomposição (simulação) |
+| **Estoque conectado à mobilização** | O "SangueConecta do Estoque" mostra criticidade e tendência; na V2, alerta doadores que consentiram | Alguns hemocentros divulgam níveis [HIPÓTESE: levantar quais] | Tempo entre o alerta crítico e a recomposição (simulação) |
 | **Indicadores para gestão** | Faltas, cancelamentos, doações, primeira doação × retorno | — | Uso do painel pela persona gestora (teste) |
 | **Notificações desacopladas** | Troca de fornecedor sem tocar no domínio; mensagens sem dados clínicos | Padrão de engenharia (diferencial técnico, não de produto) | Trocar o adaptador na demo (Mailpit → outro) |
 | **Comprovante verificável** | QR + código: o terceiro verifica a autenticidade sem receber dados extras; compartilhamento com expiração | Comprovantes em papel são o padrão [HIPÓTESE] | Verificações bem-sucedidas; aceitação pela instituição |
@@ -103,7 +103,7 @@ Escala: **P** = probabilidade, **I** = impacto (B = baixo, M = médio, A = alto)
 | 13 | E-mail, SMS e push desde o início | SMS tem custo; push exige configuração | **E-mail no MVP**; interface pronta para os demais canais |
 | 14 | Aplicativo mobile | Instalar é barreira para quem usa poucas vezes por ano | **PWA responsiva**; app nativo só se a pesquisa indicar |
 | 15 | `GET /dashboard/statistics` | Exigiria um serviço de relatórios já no MVP | Composição de estatísticas por serviço; read-model na V2 |
-| 16 | Visualização "bolsa de valores" | A metáfora de mercado pode sugerir comercialização | Manter a **forma** visual (ticker, variação, sparkline) com o nome **"Pulso do Estoque"** e o vocabulário "nível" |
+| 16 | Visualização "bolsa de valores" | A metáfora de mercado pode sugerir comercialização | Manter a **forma** visual (ticker, variação, sparkline) com o nome **"SangueConecta do Estoque"** e o vocabulário "nível" |
 | 17 | Doadores de 16 e 17 anos | Exige consentimento do responsável e cuidados da LGPD (art. 14) | Fora do MVP; o sistema orienta a procurar a unidade |
 | 18 | "Informar quando estiver elegível" | A regra é clínica e mudou recentemente | Data **informativa**, calculada por regra versionada, sempre com aviso |
 | 19 | Escopo amplo já no Checkpoint 1 | Dispersa a apresentação | No CP1, focar em **problema, solução, arquitetura, dados, segurança, MVP e plano de pesquisa**. Detalhes ficam em apêndice |

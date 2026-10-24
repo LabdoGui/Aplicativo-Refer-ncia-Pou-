@@ -12,7 +12,7 @@
 
 ## 1. Visão geral
 
-**Pulso** — *"Doe sangue. Mantenha a vida pulsando."*
+**SangueConecta** — *"Conectando doadores a vidas que precisam de ajuda."*
 
 Plataforma web responsiva (PWA) que liga doadores, equipe de coleta e gestão:
 
@@ -293,7 +293,7 @@ Limitações registradas na Fase 1 e como ficaram:
 
 | # | Decisão | Alternativa descartada | Reversível? |
 |---|---|---|---|
-| D1 | Nome **Pulso** e slogan *"Doe sangue. Mantenha a vida pulsando."* | Novo nome | Sim |
+| D1 | Nome **SangueConecta** e slogan *"Conectando doadores a vidas que precisam de ajuda."* | Novo nome | Sim |
 | D2 | **Gateway + 6 serviços**; documentos dentro de `clinical`; analytics como composição no gateway | 11 serviços | Sim (fronteiras preparadas) |
 | D3 | **RabbitMQ** para eventos | Redis Streams | Sim (porta `EventPublisher`) |
 | D4 | **Pontos por comparecimento** (+100 primeiro, +150 recorrente, +50 campanha), independentemente do resultado da triagem; badges contam doações | Pontos só por doação concluída | Sim (`engagement_settings.pointsBasis`) |

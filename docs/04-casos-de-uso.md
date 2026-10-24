@@ -11,7 +11,7 @@ flowchart LR
     G(("Gestor de estoque"))
     S(("Sistema / agendador"))
 
-    subgraph Pulso
+    subgraph SangueConecta
       UC01["UC01 Cadastrar-se"]
       UC02["UC02 Autenticar"]
       UC03["UC03 Realizar pré-triagem"]
@@ -161,7 +161,7 @@ flowchart LR
 |---|---|
 | **Atores** | Admin, Gestor de estoque (o visitante vê só o nível público) |
 | **Pré-condições** | Autenticado com o papel adequado e escopo na unidade. |
-| **Fluxo principal** | 1. O usuário abre o painel "Pulso do Estoque". 2. O sistema mostra o ticker por tipo ABO/Rh: quantidade, variação em relação ao dia anterior, mini-gráfico de 30 dias e status com cor, ícone e texto. 3. O usuário filtra por unidade, período ou hemocomponente. 4. Abre o detalhe de um tipo: série histórica, entradas e saídas, alertas. |
+| **Fluxo principal** | 1. O usuário abre o painel "SangueConecta do Estoque". 2. O sistema mostra o ticker por tipo ABO/Rh: quantidade, variação em relação ao dia anterior, mini-gráfico de 30 dias e status com cor, ícone e texto. 3. O usuário filtra por unidade, período ou hemocomponente. 4. Abre o detalhe de um tipo: série histórica, entradas e saídas, alertas. |
 | **Alternativos / exceções** | 2a. Sem dados: estado vazio orientando a cadastrar parâmetros. Visitante: `GET /blood-inventory/public` devolve apenas o nível por tipo. |
 | **Relacionados** | RF26, RF60, RF63, RF65, RN11 |
 

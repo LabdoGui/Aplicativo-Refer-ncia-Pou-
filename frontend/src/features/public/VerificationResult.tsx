@@ -39,7 +39,7 @@ export function VerificationResult({ code, result }: VerificationResultProps) {
         <div>
           <h2 className="font-sans text-base font-bold text-ok-strong">Documento autêntico</h2>
           <p className="text-sm text-ink">
-            Este código corresponde a um documento emitido pelo Pulso.
+            Este código corresponde a um documento emitido pelo SangueConecta.
           </p>
         </div>
       </div>

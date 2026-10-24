@@ -89,7 +89,7 @@ export class GamificationService {
 
   /**
    * Top 10 de quem optou por participar, por pontos (desempate: quem entrou no
-   * Pulso antes). Posições no estilo competição (1, 2, 2, 4).
+   * SangueConecta antes). Posições no estilo competição (1, 2, 2, 4).
    */
   async ranking(donorId: string): Promise<RankingResponse> {
     const settings = await this.settings.get();

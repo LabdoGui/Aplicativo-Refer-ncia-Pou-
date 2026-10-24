@@ -4,7 +4,8 @@
 
 | Opção | Conceito | Prós | Contras |
 |---|---|---|---|
-| **Pulso** ✅ | O pulso é sinal vital, ritmo e continuidade. Liga a doação à vida e o painel de estoque ao "pulso" da disponibilidade de sangue | Curto, em português, memorável; une saúde e tecnologia; vira o nome do painel ("Pulso do Estoque") | Palavra comum: pode haver marcas parecidas |
+| **SangueConecta** ✅ | "Sangue" é o que se doa; "Conecta" é o papel da plataforma: ligar quem doa, as unidades de coleta e as vidas que precisam de ajuda | Autoexplicativo, em português; diz o que o app faz; combina com o símbolo (duas pessoas formando um coração) | Nome composto, mais longo; pode haver marcas parecidas |
+| Pulso | O pulso é sinal vital, ritmo e continuidade (nome da primeira versão do protótipo) | Curto e memorável | Não diz que o assunto é doação de sangue; palavra comum |
 | Corrente | "Corrente do bem" e corrente sanguínea | Forte apelo de solidariedade | Ambíguo ("conta corrente") |
 | Sangue Bom | Gíria para "pessoa boa" | Muito carismático | Informal demais para uma instituição de saúde |
 
@@ -12,8 +13,8 @@
 
 ## 14.2 Slogan
 
-- **Principal:** *"Doe sangue. Mantenha a vida pulsando."*
-- Alternativas: *"Cada doação mantém alguém no ritmo da vida."* · *"Do agendamento ao agradecimento, com você."*
+- **Principal:** *"Conectando doadores a vidas que precisam de ajuda."*
+- Alternativas: *"Cada doação conecta alguém à vida."* · *"Do agendamento ao agradecimento, com você."*
 
 ## 14.3 Conceito
 
@@ -61,13 +62,13 @@ Todas são gratuitas (Google Fonts).
 
 ## 14.6 Logotipo (conceito)
 
-- **Símbolo:** uma **gota** de traço contínuo cuja base é atravessada por uma **linha de pulso** que sobe para a direita e sai da gota, sugerindo vida, ritmo e crescimento (estoque saudável).
-- **Logotipo:** "pulso" em minúsculas, Plus Jakarta Sans Bold, com espaçamento levemente aberto.
+- **Símbolo:** uma **gota vermelha** com **duas pessoas** cujos braços se unem formando um **coração**: quem doa e quem recebe, conectados pela doação. Arquivos em [`docs/marca`](marca) (arte original e versão vetorial `sangueconecta-simbolo.svg`, usada no app e no favicon).
+- **Logotipo:** "SangueConecta" em negrito, com **"Sangue" em vermelho** (`#D30A04`) e **"Conecta" em azul** (`#215F8F`), ao lado do símbolo; slogan abaixo na versão completa ([`docs/marca/sangueconecta-logo.jpg`](marca/sangueconecta-logo.jpg)).
 - **Versões:** horizontal (símbolo + nome), vertical, só símbolo (favicon e ícone da PWA), monocromática (carmim, petróleo, branco).
-- **Área de proteção:** altura do "p" em volta do logotipo; tamanho mínimo de 24 px para o símbolo.
+- **Área de proteção:** altura do "S" em volta do logotipo; tamanho mínimo de 24 px de altura para o símbolo.
 - **Evitar:**
   - a **cruz vermelha sobre fundo branco**: é um emblema protegido pelas Convenções de Genebra e não pode ser usado como marca;
-  - corações estilizados genéricos e mãos segurando gotas (clichês);
+  - mãos segurando gotas (clichê) e outros símbolos que concorram com a gota da marca;
   - degradês fortes e efeitos 3D.
 
 ## 14.7 Estilo de componentes
@@ -91,13 +92,13 @@ Todas são gratuitas (Google Fonts).
 |---|---|---|---|
 | Doador | Celular | Acolhedor: mais respiro, ilustrações, carmim nas ações | 1. Página pública · 2. Cadastro · 3. Pré-triagem (pergunta + resultado) · 4. Escolha de horário · 5. Confirmação · 6. Painel "Minha jornada" (próxima data, conquistas, histórico) |
 | Profissional | Tablet ou desktop | Funcional: denso, petróleo, foco em velocidade e leitura | 7. Agenda do dia com check-in · 8. Atendimento (triagem simulada) |
-| Admin / gestor | Desktop | Analítico: painéis, números tabulares | 9. **Pulso do Estoque** · 10. Configuração da grade semanal |
+| Admin / gestor | Desktop | Analítico: painéis, números tabulares | 9. **SangueConecta do Estoque** · 10. Configuração da grade semanal |
 
-### "Pulso do Estoque": a visualização no estilo bolsa de valores
+### "SangueConecta do Estoque": a visualização no estilo bolsa de valores
 
 ```
 ┌───────────────────────────────────────────────────────────────────────────┐
-│  Pulso do Estoque · Unidade Centro · atualizado 14/11 10:32   DADOS FICTÍCIOS │
+│  SangueConecta do Estoque · Unidade Centro · atualizado 14/11 10:32   DADOS FICTÍCIOS │
 ├───────────┬───────────┬───────────┬───────────┬───────────┬───────────┬─────┤
 │ O+   82 ▲2│ O-   18 ▼3│ A+   61 ▲1│ A-   22 ▼1│ B+   35 ═0│ B-    9 ▼2│ ... │
 │ ●Adequado │ ▼Crítico  │ ●Adequado │ ◆Atenção  │ ◆Atenção  │ ▼Crítico  │     │

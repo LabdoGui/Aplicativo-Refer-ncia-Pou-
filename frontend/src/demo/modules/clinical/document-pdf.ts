@@ -59,10 +59,10 @@ export async function renderDocumentPdf(
 
   const doc = new jsPDF({ unit: 'pt', format: 'a4', compress: true });
   doc.setProperties({
-    title: `${title} — Pulso`,
-    author: 'Pulso (protótipo acadêmico)',
+    title: `${title} — SangueConecta`,
+    author: 'SangueConecta (protótipo acadêmico)',
     subject: title,
-    creator: 'Pulso (demonstração no navegador)',
+    creator: 'SangueConecta (demonstração no navegador)',
   });
   doc.setCreationDate(new Date(input.issuedAt));
 
@@ -74,10 +74,10 @@ export async function renderDocumentPdf(
   doc.setFillColor(BRAND);
   doc.rect(0, 0, pageWidth, 8, 'F');
   doc.setTextColor(BRAND).setFont('helvetica', 'bold').setFontSize(26);
-  doc.text('Pulso', MARGIN, 48, top);
+  doc.text('SangueConecta', MARGIN, 48, top);
   let y = 48 + 26 * LINE;
   doc.setTextColor(MUTED).setFont('helvetica', 'normal').setFontSize(10);
-  doc.text('Doe sangue. Mantenha a vida pulsando.', MARGIN, y, top);
+  doc.text('Conectando doadores a vidas que precisam de ajuda.', MARGIN, y, top);
   y += 10 * LINE * 4; // a linha + moveDown(3)
 
   doc.setTextColor(INK).setFont('helvetica', 'bold').setFontSize(20);

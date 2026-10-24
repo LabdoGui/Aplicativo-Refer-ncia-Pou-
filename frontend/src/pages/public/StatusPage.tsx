@@ -52,7 +52,7 @@ export function StatusPage() {
       <PageHeader
         eyebrow="Transparência"
         title="Status do sistema"
-        description="Situação em tempo real dos serviços do Pulso, com banco de dados e mensageria. Atualiza sozinha a cada 10 segundos."
+        description="Situação em tempo real dos serviços do SangueConecta, com banco de dados e mensageria. Atualiza sozinha a cada 10 segundos."
       />
 
       {/* Uma única região viva, sempre montada (alerta e cartões não são regiões vivas). */}

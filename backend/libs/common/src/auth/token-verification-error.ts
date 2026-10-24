@@ -9,7 +9,7 @@ import { AppException } from '../errors/app.exception';
  */
 export type TokenVerificationFailure = 'invalid' | 'unavailable';
 
-/** Erro lançado pelos verificadores do Pulso com a classificação já definida. */
+/** Erro lançado pelos verificadores do SangueConecta com a classificação já definida. */
 export class TokenVerificationError extends Error {
   constructor(
     readonly failure: TokenVerificationFailure,

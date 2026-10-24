@@ -42,7 +42,7 @@ flowchart TB
     PR["Colaborador e profissional (tablet ou desktop)"]
     AD["Admin e gestor de estoque (desktop)"]
     IE["Instituição de ensino (V2)"]
-    P(["Pulso"])
+    P(["SangueConecta"])
     EM["Provedor de e-mail (SMTP)"]
     SMS["Provedor SMS / Push (V2)"]
     HS["Sistema oficial do hemocentro (Futuro, integração)"]

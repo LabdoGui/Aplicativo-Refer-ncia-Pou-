@@ -17,7 +17,7 @@ export const REQUEST_BODY_LIMIT = '1mb';
 /** Cache-Control padrão das respostas da API: nada de dados pessoais em cache do navegador. */
 export const DEFAULT_CACHE_CONTROL = 'no-store';
 
-/** Parsers de corpo JSON e de formulário com o limite do Pulso (o padrão do Express é 100 kB). */
+/** Parsers de corpo JSON e de formulário com o limite do SangueConecta (o padrão do Express é 100 kB). */
 export function registerBodyParsers(app: NestExpressApplication): void {
   app.useBodyParser('json', { limit: REQUEST_BODY_LIMIT });
   app.useBodyParser('urlencoded', { limit: REQUEST_BODY_LIMIT, extended: true });
@@ -84,7 +84,7 @@ export function setupSwagger(
   });
 }
 
-/** Inicializa um processo NestJS com as convenções do Pulso. */
+/** Inicializa um processo NestJS com as convenções do SangueConecta. */
 export async function bootstrapService(options: BootstrapOptions): Promise<NestExpressApplication> {
   const app = await NestFactory.create<NestExpressApplication>(options.module, {
     bufferLogs: true,

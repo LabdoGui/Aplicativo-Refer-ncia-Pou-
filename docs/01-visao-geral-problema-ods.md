@@ -2,7 +2,7 @@
 
 ## PARTE 1 — Visão geral (resumo executivo)
 
-**Pulso** (nome provisório) é uma plataforma digital que **reduz atritos na jornada do doador de sangue** e **dá visibilidade operacional** a quem organiza a coleta. Ela tem três frentes:
+**SangueConecta** é uma plataforma digital que **reduz atritos na jornada do doador de sangue** e **dá visibilidade operacional** a quem organiza a coleta. Ela tem três frentes:
 
 1. **Doador**: entender o processo, verificar critérios básicos numa *pré-triagem informativa*, agendar, receber lembretes, acompanhar o histórico, obter comprovantes e ser incentivado a voltar.
 2. **Profissional da unidade**: agenda do dia, confirmação de presença, registro do atendimento e do desfecho da doação. No protótipo, essa parte é [SIMULAÇÃO].
@@ -10,7 +10,7 @@
 
 A solução usa **arquitetura de microsserviços com API REST**, dimensionada para uma equipe acadêmica: 6 serviços com fronteiras claras, PostgreSQL e mensageria para eventos. O projeto também é **privacy by design**: os dados de saúde ficam isolados num único serviço, a coleta é mínima e todo acesso é auditado.
 
-**O que o Pulso não é:**
+**O que o SangueConecta não é:**
 - não substitui a triagem clínica, que continua sendo decisão do profissional de saúde;
 - não é o sistema oficial de hemoterapia da instituição (rastreabilidade de bolsas, sorologia, prontuário);
 - não emite atestado com validade jurídica sem convênio e validação formal.
@@ -33,7 +33,7 @@ A solução usa **arquitetura de microsserviços com API REST**, dimensionada pa
 
 Atritos do doador, com respaldo da literatura:
 
-| Atrito | Evidência | Como o Pulso atua |
+| Atrito | Evidência | Como o SangueConecta atua |
 |--------|-----------|-------------------|
 | Inconveniência (onde, quando, fila) | **[FONTE]** Bednall & Bove (2011): inconveniência está entre os desmotivadores mais citados por doadores e não doadores, e conveniência está entre os principais motivadores. | Locais, horários e agendamento num só lugar. |
 | Falta de conhecimento / baixa autoeficácia ("não sei se posso") | **[FONTE]** Bednall & Bove (2011): falta de conhecimento e baixa autoeficácia aparecem entre os desmotivadores. | Conteúdo educativo e pré-triagem informativa. |
@@ -61,7 +61,7 @@ Atritos da instituição, a validar em campo:
 
 O ODS 3 busca "assegurar uma vida saudável e promover o bem-estar para todos, em todas as idades". Nenhuma meta do ODS 3 fala especificamente de sangue. Por isso, **a contribuição do projeto é indireta e precisa ser apresentada com honestidade**:
 
-| Meta do ODS 3 (texto resumido; ver IPEA/ONU) | Relação com a disponibilidade de sangue | Contribuição do Pulso |
+| Meta do ODS 3 (texto resumido; ver IPEA/ONU) | Relação com a disponibilidade de sangue | Contribuição do SangueConecta |
 |---|---|---|
 | **3.1** Reduzir a mortalidade materna | Hemorragias obstétricas exigem acesso rápido a hemocomponentes. | Ajuda a manter o estoque com doações recorrentes e agendadas. |
 | **3.6** Reduzir mortes e lesões no trânsito | Vítimas de trauma frequentemente precisam de transfusão. | Mobiliza doadores quando o estoque fica crítico (painel e alertas). |
@@ -69,6 +69,6 @@ O ODS 3 busca "assegurar uma vida saudável e promover o bem-estar para todos, e
 | **3.d** Alerta precoce e gestão de riscos à saúde | Estoques críticos são um risco sistêmico (feriados, férias, emergências). | Painel com níveis de atenção e crítico, tendências e alertas. **Na simulação, os dados são fictícios.** |
 
 **Frase sugerida para a apresentação:**
-> "O Pulso contribui para o ODS 3, especialmente às metas 3.8 e 3.d, ao reduzir barreiras à doação voluntária e dar às instituições visibilidade para agir antes que o estoque fique crítico. Indiretamente, apoia as metas 3.1 e 3.6, que dependem de sangue disponível."
+> "O SangueConecta contribui para o ODS 3, especialmente às metas 3.8 e 3.d, ao reduzir barreiras à doação voluntária e dar às instituições visibilidade para agir antes que o estoque fique crítico. Indiretamente, apoia as metas 3.1 e 3.6, que dependem de sangue disponível."
 
 > Fonte das metas: página do IPEA sobre o ODS 3 (metas adaptadas ao Brasil). Confira o texto exato antes de colocá-lo no slide.

@@ -309,7 +309,7 @@ function slug(text: string): string {
 export const SEED_UNITS: SeedUnit[] = [
   {
     id: SEED_IDS.units.centro,
-    name: 'Pulso Unidade Centro',
+    name: 'SangueConecta Unidade Centro',
     address: 'Rua da Solidariedade, 120',
     district: 'Centro',
     city: 'São Paulo',
@@ -320,7 +320,7 @@ export const SEED_UNITS: SeedUnit[] = [
   },
   {
     id: SEED_IDS.units.norte,
-    name: 'Pulso Unidade Zona Norte',
+    name: 'SangueConecta Unidade Zona Norte',
     address: 'Avenida das Doações, 455',
     district: 'Santana',
     city: 'São Paulo',
@@ -331,7 +331,7 @@ export const SEED_UNITS: SeedUnit[] = [
   },
   {
     id: SEED_IDS.units.campus,
-    name: 'Pulso Posto Campus Universitário',
+    name: 'SangueConecta Posto Campus Universitário',
     address: 'Alameda do Conhecimento, 1000 — Bloco B',
     district: 'Cidade Universitária',
     city: 'São Paulo',

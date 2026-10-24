@@ -1,4 +1,4 @@
-# Imagem única para todos os processos NestJS do Pulso (gateway e os 6 serviços).
+# Imagem única para todos os processos NestJS do SangueConecta (gateway e os 6 serviços).
 #
 #   docker build -f docker/service.Dockerfile \
 #     --build-arg SERVICE_DIR=backend/services/identity --build-arg SERVICE_PORT=3001 \

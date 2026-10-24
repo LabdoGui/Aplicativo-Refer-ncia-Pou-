@@ -10,7 +10,7 @@ const attendance = {
   appointmentId: 'ap-1',
   donorId: 'd1',
   unitId: 'u-centro',
-  unitName: 'Pulso Unidade Centro',
+  unitName: 'SangueConecta Unidade Centro',
   campaignId: 'camp-1',
   campaignTitle: 'Campanha',
   result: 'FIT',

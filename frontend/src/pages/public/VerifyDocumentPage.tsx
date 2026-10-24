@@ -19,7 +19,7 @@ export function VerifyDocumentPage() {
       <PageHeader
         eyebrow="Autenticidade"
         title="Verificar documento"
-        description="Confira se uma declaração emitida pelo Pulso é autêntica. Mostramos só o necessário: nunca o nome completo nem dados de saúde."
+        description="Confira se uma declaração emitida pelo SangueConecta é autêntica. Mostramos só o necessário: nunca o nome completo nem dados de saúde."
       />
       <div className="space-y-6">
         {code && (

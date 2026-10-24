@@ -162,8 +162,8 @@ export function ToggleStatusDialog({
       description={
         user &&
         (disabling
-          ? `${user.name} não conseguirá entrar no Pulso, e as sessões abertas serão encerradas. Os registros ficam guardados.`
-          : `${user.name} poderá entrar no Pulso de novo.`)
+          ? `${user.name} não conseguirá entrar no SangueConecta, e as sessões abertas serão encerradas. Os registros ficam guardados.`
+          : `${user.name} poderá entrar no SangueConecta de novo.`)
       }
       actions={
         <>

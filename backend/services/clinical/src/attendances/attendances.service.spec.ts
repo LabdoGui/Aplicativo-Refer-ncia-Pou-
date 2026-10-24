@@ -9,7 +9,7 @@ const appointment: InternalAppointmentView = {
   code: 'AG-AAAAAA',
   donorId: 'd1',
   unitId: 'u-centro',
-  unitName: 'Pulso Unidade Centro',
+  unitName: 'SangueConecta Unidade Centro',
   status: 'CHECKED_IN',
   startsAt: '2026-10-17T12:00:00.000Z',
   campaignId: null,

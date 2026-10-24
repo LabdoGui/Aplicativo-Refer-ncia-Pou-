@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Matriz de autorização do Pulso pela API real: cada papel (anônimo, doador,
+ * Matriz de autorização do SangueConecta pela API real: cada papel (anônimo, doador,
  * colaborador, enfermeiro e administrador) contra rotas representativas de
  * todos os serviços, mais acesso a recursos de outro doador (IDOR), escopo
  * por unidade, segregação de funções (D10) e token adulterado.
@@ -118,7 +118,7 @@ let failures = 0;
 let checks = 0;
 const isDenied = (status) => status === 401 || status === 403;
 
-console.log(`Matriz de autorização do Pulso em ${BASE_URL}\n`);
+console.log(`Matriz de autorização do SangueConecta em ${BASE_URL}\n`);
 for (const [method, path, body, expected] of MATRIX) {
   const cells = [];
   for (const [index, role] of ROLES.entries()) {

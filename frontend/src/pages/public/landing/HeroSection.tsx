@@ -14,7 +14,8 @@ export function HeroSection() {
             id="hero-title"
             className="mt-5 text-3xl font-extrabold tracking-tight text-ink sm:text-4xl lg:text-5xl"
           >
-            Doe sangue. <span className="text-carmim-700">Mantenha a vida pulsando.</span>
+            Conectando doadores{' '}
+            <span className="text-carmim-700">a vidas que precisam de ajuda.</span>
           </h1>
           <p className="mt-5 max-w-xl text-lg text-ink-muted">
             Prepare-se, agende e acompanhe sua doação em um só lugar, com orientações claras e

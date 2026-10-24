@@ -1,8 +1,13 @@
 import { cn } from '@/lib/cn';
+import {
+  SYMBOL_DROP_PATH,
+  SYMBOL_FIGURES_PATH,
+  SYMBOL_VIEWBOX,
+} from '@/components/brand/symbol-paths';
 
 /**
- * Ilustração decorativa do hero: o símbolo do Pulso ampliado, com a linha de pulso
- * atravessando o painel. Sem dados, números ou pessoas fictícias.
+ * Ilustração decorativa do hero: o símbolo do SangueConecta ampliado, no centro de
+ * círculos concêntricos. Sem dados, números ou pessoas fictícias.
  */
 export function HeroArt({ className }: { className?: string }) {
   return (
@@ -20,25 +25,11 @@ export function HeroArt({ className }: { className?: string }) {
         </g>
         <circle cx="200" cy="190" r="84" className="fill-petroleo-50" />
 
-        {/* Gota (geometria do LogoMark ampliada 7×). */}
-        <path
-          d="M200 102.5c-19.25 23.8-59.5 70.7-59.5 106.75a59.5 59.5 0 0 0 119 0c0-36.05-40.25-82.95-59.5-106.75z"
-          className="fill-surface text-carmim-700"
-          stroke="currentColor"
-          strokeWidth="5"
-          strokeLinejoin="round"
-        />
-
-        {/* Linha de pulso que atravessa a base da gota e sobe para a direita. */}
-        <path
-          d="M-10 225H154.5L172 191.75L194.75 244.25L215.75 200.5L410 56"
-          fill="none"
-          className="text-petroleo-700"
-          stroke="currentColor"
-          strokeWidth="5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
+        {/* Símbolo da marca (mesma geometria do LogoMark), centrado nos círculos. */}
+        <svg x="138" y="95" width="124" height="190" viewBox={SYMBOL_VIEWBOX}>
+          <path d={SYMBOL_DROP_PATH} className="fill-marca-vermelho" />
+          <path d={SYMBOL_FIGURES_PATH} className="fill-marca-claro" />
+        </svg>
 
         <g className="fill-coral">
           <circle cx="291" cy="144.5" r="7" />
