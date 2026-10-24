@@ -5,7 +5,7 @@
 [![CI](https://github.com/LabdoGui/Reposit-rioFMU/actions/workflows/ci.yml/badge.svg)](https://github.com/LabdoGui/Reposit-rioFMU/actions/workflows/ci.yml)
 [![Abrir no GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/LabdoGui/Reposit-rioFMU?quickstart=1)
 
-**Experimente no celular ou no computador, sem instalar nada:** <https://labdogui.github.io/Reposit-rioFMU/pulso/> (demonstração no navegador com dados fictícios; contas na seção [Contas de demonstração](#contas-de-demonstração), senha `Pulso@2026`).
+**Experimente no celular ou no computador, sem instalar nada:** <https://labdogui.github.io/Reposit-rioFMU/sangueconecta/> (demonstração no navegador com dados fictícios; contas na seção [Contas de demonstração](#contas-de-demonstração), senha `Pulso@2026`).
 
 O **SangueConecta** é uma plataforma web responsiva (PWA) de apoio à doação de sangue. Ela acompanha a jornada de quem doa (descoberta, cadastro, pré-triagem informativa, agendamento, lembretes, atendimento, pós-doação e incentivo à recorrência) e oferece à equipe de coleta e à gestão ferramentas para organizar a agenda, registrar o atendimento e acompanhar o estoque de sangue.
 
@@ -145,7 +145,7 @@ npm run build:demo -w @pulso/frontend   # gera frontend/dist-demo/demo.html (~2,
 npm run dev:demo -w @pulso/frontend     # ou: versão de desenvolvimento em /demo.html
 ```
 
-A versão publicada fica em <https://labdogui.github.io/Reposit-rioFMU/pulso/> (GitHub Pages, branch `gh-pages`, pasta `pulso/`). O arquivo abre com dois cliques no navegador ou publicado em qualquer hospedagem estática; as rotas ficam depois do `#` (ex.: `demo.html#/admin`). As contas de demonstração são as mesmas. O que a pessoa faz fica só naquele aparelho (localStorage), recomeça a cada dia e pode ser apagado pelo botão **Recomeçar** do aviso. A jornada de 22 passos roda também na demonstração (`BASE_URL=http://localhost:4173/demo.html npm run e2e:ui`, com `npx vite preview --mode demo` em `frontend/`), e o CI a executa a cada push. O build normal do app (`npm run build`) não inclui nada da demonstração.
+A versão publicada fica em <https://labdogui.github.io/Reposit-rioFMU/sangueconecta/> (GitHub Pages, branch `gh-pages`, pasta `sangueconecta/`; o endereço antigo `/pulso/` redireciona para ele). O arquivo abre com dois cliques no navegador ou publicado em qualquer hospedagem estática; as rotas ficam depois do `#` (ex.: `demo.html#/admin`). As contas de demonstração são as mesmas. O que a pessoa faz fica só naquele aparelho (localStorage), recomeça a cada dia e pode ser apagado pelo botão **Recomeçar** do aviso. A jornada de 22 passos roda também na demonstração (`BASE_URL=http://localhost:4173/demo.html npm run e2e:ui`, com `npx vite preview --mode demo` em `frontend/`), e o CI a executa a cada push. O build normal do app (`npm run build`) não inclui nada da demonstração.
 
 ### No seu computador
 
