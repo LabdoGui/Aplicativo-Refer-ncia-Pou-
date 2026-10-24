@@ -121,7 +121,7 @@ function register(request: DemoRequest) {
     fail(
       422,
       'AGE_RESTRICTION',
-      'O cadastro no Pulso é para maiores de 18 anos. Se você tem 16 ou 17 anos, procure diretamente uma unidade de coleta.',
+      'O cadastro no SangueConecta é para maiores de 18 anos. Se você tem 16 ou 17 anos, procure diretamente uma unidade de coleta.',
     );
   }
   // E-mail é único (inclusive entre contas desativadas): no banco, a restrição unique.

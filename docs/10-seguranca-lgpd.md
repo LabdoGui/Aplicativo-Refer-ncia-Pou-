@@ -5,7 +5,7 @@
 
 ## 11.1 Enquadramento na LGPD (Lei nº 13.709/2018) [FONTE]
 
-| Conceito | Aplicação no Pulso |
+| Conceito | Aplicação no SangueConecta |
 |---|---|
 | **Dado pessoal** (art. 5º, I) | Nome, e-mail, telefone, data de nascimento, histórico de agendamentos. |
 | **Dado pessoal sensível** (art. 5º, II: "dado referente à saúde") | Respostas da pré-triagem, resultado da triagem, registros de doação, tipo sanguíneo, data de elegibilidade derivada de regra clínica. **Até o fato de ter comparecido a um hemocentro pode revelar informação de saúde por inferência** [VALIDAR-JURÍDICO]. |
@@ -79,7 +79,7 @@
 
 ## 11.3 Modelo de ameaças (STRIDE resumido)
 
-| Ameaça | Exemplo no Pulso | Controle |
+| Ameaça | Exemplo no SangueConecta | Controle |
 |---|---|---|
 | **S**poofing | Uso de credencial vazada | Hash forte, rate limit, bloqueio progressivo, MFA para profissionais (V2), e-mail de "novo acesso" (Could) |
 | **T**ampering | Alterar o saldo do estoque sem rastro; alterar o resultado da triagem | Ledger imutável, registros decididos imutáveis, `REVOKE UPDATE/DELETE`, auditoria |

@@ -73,7 +73,7 @@ flowchart TD
 flowchart LR
     A["Login admin"] --> B["Dashboard"]
     B --> C["Indicadores: agendamentos do dia, doações, cancelamentos, faltas"]
-    B --> D["Pulso do Estoque"]
+    B --> D["SangueConecta do Estoque"]
     D --> D1["Detalhe por tipo: histórico, tendência, entradas e saídas"]
     D --> D2["Registrar movimentação (gestor de estoque)"]
     D --> D3["Parametrizar mínimo e ideal"]

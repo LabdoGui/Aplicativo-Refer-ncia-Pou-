@@ -58,7 +58,7 @@ export function LoginPage() {
 
   return (
     <AuthCard
-      title="Entrar no Pulso"
+      title="Entrar no SangueConecta"
       description="Acompanhe seus agendamentos, doações e conquistas."
       footer={
         <>

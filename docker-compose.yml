@@ -1,4 +1,4 @@
-# Pulso — ambiente completo em contêineres.
+# SangueConecta — ambiente completo em contêineres.
 #
 #   docker compose up --build        → http://localhost:8080
 #   npm run infra:up                 → só PostgreSQL e RabbitMQ (desenvolvimento local)

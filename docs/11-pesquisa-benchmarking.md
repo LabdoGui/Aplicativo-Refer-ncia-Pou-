@@ -221,6 +221,6 @@ Tipos: **[FONTE]** documento · **[CAMPO]** entrevista ou questionário (anonimi
 | **IBGE — API de dados** (localidades, população) | Lista de UFs e municípios, população | Calcular indicadores por habitante; combos de UF e cidade no cadastro de unidades | API pública documentada |
 | **Portal Brasileiro de Dados Abertos (dados.gov.br)** | Buscar conjuntos sobre sangue e hemoterapia | Pesquisa exploratória | Verificar data de atualização e licença |
 | **OMS — Global status report 2025** | Indicadores internacionais | Comparação e contexto | Indicadores agregados por país |
-| **Sites dos hemocentros** | Nível de estoque divulgado ao público (em alguns) | Benchmarking da visualização "Pulso do Estoque" | Respeitar termos de uso; **não** fazer scraping sem autorização |
+| **Sites dos hemocentros** | Nível de estoque divulgado ao público (em alguns) | Benchmarking da visualização "SangueConecta do Estoque" | Respeitar termos de uso; **não** fazer scraping sem autorização |
 
 **Conclusão provisória:** não foi encontrada evidência de **API pública nacional de estoque de sangue em tempo real** [HIPÓTESE: confirmar na pesquisa]. Por isso, o painel de estoque do protótipo é [SIMULAÇÃO] e pode ser calibrado com ordens de grandeza dos boletins públicos. A integração com bases públicas é uma funcionalidade **Futuro**.

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Jornada de ponta a ponta do Pulso (os 22 passos do critério de aceite), pela
+ * Jornada de ponta a ponta do SangueConecta (os 22 passos do critério de aceite), pela
  * API real e com o banco de dados: cadastro → pré-triagem → agendamento →
  * atendimento da enfermagem → doação → pontos, conquista e documento →
  * dashboard, estoque, gráficos e histórico do administrador.
@@ -20,7 +20,7 @@ const API = `${BASE_URL}/api/v1`;
 const DEMO_PASSWORD = 'Pulso@2026';
 const NURSE = 'enfermeiro@demo.com';
 const ADMIN = 'admin@demo.com';
-const CENTRO_UNIT_NAME = 'Pulso Unidade Centro';
+const CENTRO_UNIT_NAME = 'SangueConecta Unidade Centro';
 
 const results = [];
 let step = 0;
@@ -105,7 +105,7 @@ const plusDays = (date, days) => {
 
 const ctx = {};
 const email = `e2e.${Date.now()}@exemplo.test`;
-console.log(`Jornada E2E do Pulso em ${BASE_URL}\n`);
+console.log(`Jornada E2E do SangueConecta em ${BASE_URL}\n`);
 
 // --- Doador ----------------------------------------------------------------
 await check('cadastrar um doador', async () => {

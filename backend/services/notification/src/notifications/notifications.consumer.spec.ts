@@ -163,7 +163,7 @@ describe('NotificationsConsumer', () => {
     const reminder = {
       appointmentId: 'ap1',
       donorId: 'd1',
-      unitName: 'Pulso Unidade Centro',
+      unitName: 'SangueConecta Unidade Centro',
       startsAt: '2026-10-20T12:00:00.000Z',
     };
 

@@ -62,14 +62,14 @@ export function WorkspaceLayout({
           </button>
           <Link
             to={homePath}
-            aria-label={`Pulso — início: ${areaLabel}`}
+            aria-label={`SangueConecta — início: ${areaLabel}`}
             className="rounded-control lg:hidden"
           >
-            <Logo size="sm" />
+            <Logo size="sm" collapsible />
           </Link>
           <p className="hidden text-sm font-semibold text-petroleo-800 lg:block">{areaLabel}</p>
           <div className="ml-auto flex items-center gap-2">
-            <Badge tone="neutral" className="hidden sm:inline-flex">
+            <Badge tone="neutral" className="max-sm:hidden">
               Dados fictícios
             </Badge>
             {notificationsPath && <NotificationBell to={notificationsPath} />}

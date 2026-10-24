@@ -11,7 +11,7 @@ export const DOCS_CACHE_TTL_MS = 30_000;
 const DOCS_FETCH_TIMEOUT_MS = 3_000;
 
 const INTRODUCTION = [
-  'Documentação unificada das APIs do Pulso, reunida pelo gateway a partir do Swagger de cada serviço.',
+  'Documentação unificada das APIs do SangueConecta, reunida pelo gateway a partir do Swagger de cada serviço.',
   '',
   'Todas as rotas usam o prefixo `/api/v1`. Rotas protegidas exigem o cabeçalho `Authorization: Bearer <token>` ' +
     '(use o botão **Authorize**). Erros seguem o formato Problem Details (RFC 9457).',
@@ -64,7 +64,7 @@ export class DocsService {
       })),
     );
     const document = mergeOpenApiDocuments({
-      title: 'Pulso — API',
+      title: 'SangueConecta — API',
       version: this.config.SERVICE_VERSION,
       description: INTRODUCTION,
       gateway: this.gatewayDocument ?? {

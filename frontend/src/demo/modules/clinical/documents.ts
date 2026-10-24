@@ -167,7 +167,7 @@ function file(actor: AuthUser, id: string) {
   Object.assign(response.headers, {
     'cache-control': 'no-store',
     'x-content-sha256': document.sha256,
-    'content-disposition': `inline; filename="pulso-${kind}-${document.attendanceDate}.pdf"`,
+    'content-disposition': `inline; filename="sangueconecta-${kind}-${document.attendanceDate}.pdf"`,
   });
   return response;
 }

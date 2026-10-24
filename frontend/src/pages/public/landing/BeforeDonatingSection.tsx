@@ -40,8 +40,8 @@ export function BeforeDonatingSection() {
             antes de ir.
           </p>
           <p className="mt-2">
-            A pré-triagem do Pulso é apenas informativa: quem avalia se você pode doar é a equipe de
-            saúde, na triagem presencial.
+            A pré-triagem do SangueConecta é apenas informativa: quem avalia se você pode doar é a
+            equipe de saúde, na triagem presencial.
           </p>
         </Alert>
       </div>

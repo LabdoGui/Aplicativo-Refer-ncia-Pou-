@@ -14,7 +14,7 @@ export function SidebarBrand({ areaLabel, homePath, onNavigate }: SidebarBrandPr
       <Link
         to={homePath}
         onClick={onNavigate}
-        aria-label={`Pulso — início: ${areaLabel}`}
+        aria-label={`SangueConecta — início: ${areaLabel}`}
         className="inline-flex rounded-control"
       >
         <Logo tone="white" />

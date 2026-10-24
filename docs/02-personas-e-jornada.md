@@ -70,7 +70,7 @@ Todas são **fictícias** [HIPÓTESE] e devem ser revisadas após as entrevistas
 
 ```mermaid
 journey
-    title Jornada do doador no Pulso (percepção esperada)
+    title Jornada do doador no SangueConecta (percepção esperada)
     section Antes
       Descobrir a importância: 4: Doador
       Criar conta: 3: Doador

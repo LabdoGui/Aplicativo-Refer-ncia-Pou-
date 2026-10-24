@@ -28,7 +28,7 @@ export function AccountDeletedNotice() {
           </Button>
         }
       >
-        Apagamos seus dados de identificação. Obrigado por ter feito parte do Pulso.
+        Apagamos seus dados de identificação. Obrigado por ter feito parte do SangueConecta.
       </Alert>
     </div>
   );

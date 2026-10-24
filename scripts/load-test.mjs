@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Teste de carga leve do Pulso (Node 22, sem dependências): dispara requisições
+ * Teste de carga leve do SangueConecta (Node 22, sem dependências): dispara requisições
  * concorrentes nas rotas mais usadas pelo doador e mede latência (p50/p95/p99),
  * vazão e erros. Passa se não houver 5xx/falhas de rede e o p95 ficar abaixo
  * do limite.

@@ -104,7 +104,7 @@ const scheduling = doc({
 
 function merge(services: OpenApiSource[]) {
   return mergeOpenApiDocuments({
-    title: 'Pulso — API',
+    title: 'SangueConecta — API',
     version: '0.1.0',
     description: 'Introdução.',
     gateway,

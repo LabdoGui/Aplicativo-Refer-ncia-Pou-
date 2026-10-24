@@ -7,7 +7,7 @@
 O MVP precisa **demonstrar a jornada completa de ponta a ponta com o menor número de funcionalidades**, provar a arquitetura (gateway, serviços, eventos, segurança) e caber no tempo de uma equipe de estudantes. Tudo que é "bonito, mas não essencial para a história" fica para depois.
 
 **A história que o MVP precisa contar na apresentação final:**
-> Ana se cadastra → faz a pré-triagem → agenda para quinta às 9h → recebe o e-mail → no dia, Marcos faz o check-in → Juliana registra a triagem e a doação (simuladas) → Ana recebe o agradecimento e a conquista "Primeiro Passo" → Paula vê o dashboard e o "Pulso do Estoque" com O- crítico, registra uma movimentação e vê o alerta.
+> Ana se cadastra → faz a pré-triagem → agenda para quinta às 9h → recebe o e-mail → no dia, Marcos faz o check-in → Juliana registra a triagem e a doação (simuladas) → Ana recebe o agradecimento e a conquista "Primeiro Passo" → Paula vê o dashboard e o "SangueConecta do Estoque" com O- crítico, registra uma movimentação e vê o alerta.
 
 ### 15.2 Escopo
 
@@ -84,7 +84,7 @@ Cortar **de baixo para cima**, sem nunca cortar a jornada principal:
 |---|---|---|
 | 16–17/10 | Ler e revisar esta documentação; decidir o nome (checagem no INPI) e o plano de arquitetura (6 ou 4 serviços) | Todos |
 | 17–18/10 | Enviar e-mails de contato para 2 ou 3 hemocentros ou hospitais e para a coordenação do curso | Pesquisa |
-| 17–19/10 | Wireframes no Figma das 10 telas-chave ([12-identidade-visual](12-identidade-visual.md), item 14.8); alta fidelidade de 3 delas (pré-triagem, horário, Pulso do Estoque) | UX/Front |
+| 17–19/10 | Wireframes no Figma das 10 telas-chave ([12-identidade-visual](12-identidade-visual.md), item 14.8); alta fidelidade de 3 delas (pré-triagem, horário, SangueConecta do Estoque) | UX/Front |
 | 18–19/10 | Exportar os diagramas Mermaid (arquitetura, ER, 2 sequências) para os slides | Arquitetura |
 | 18–20/10 | Planilha de fichamento com as 10 primeiras fontes lidas | Pesquisa |
 | 19–20/10 | Deck do Checkpoint 1 ([15-checkpoint-1](15-checkpoint-1.md)) e ensaio cronometrado | Todos |
@@ -103,7 +103,7 @@ gantt
     Sprint 1 - scheduling (unidades, grade, agendar, cancelar) + front doador :s1, after s0, 14d
     Sprint 2 - clinical (pré-triagem, triagem, doação) + check-in + notificações :s2, after s1, 14d
     section Gestão e engajamento
-    Sprint 3 - inventory + Pulso do Estoque + dashboard + engagement :s3, after s2, 14d
+    Sprint 3 - inventory + SangueConecta do Estoque + dashboard + engagement :s3, after s2, 14d
     section Fechamento
     Sprint 4 - estabilização, testes, k6, segurança, ensaio, vídeo :s4, after s3, 10d
     section Pesquisa contínua

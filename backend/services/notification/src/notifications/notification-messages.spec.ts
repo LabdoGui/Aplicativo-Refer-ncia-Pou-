@@ -38,13 +38,15 @@ describe('mensagens de notificação', () => {
         code: 'AG-7K3M9P',
         donorId: DONOR,
         unitId: 'u1',
-        unitName: 'Pulso Unidade Centro',
+        unitName: 'SangueConecta Unidade Centro',
         startsAt: '2026-10-16T12:30:00.000Z',
         campaignId: null,
       }),
     );
     expect(item.type).toBe('APPOINTMENT_CONFIRMED');
-    expect(item.body).toBe('sex., 16/10 às 09:30 em Pulso Unidade Centro. Código AG-7K3M9P.');
+    expect(item.body).toBe(
+      'sex., 16/10 às 09:30 em SangueConecta Unidade Centro. Código AG-7K3M9P.',
+    );
     expect(item.link).toBe(`/app/agendamentos/${APPOINTMENT}`);
   });
 
@@ -52,7 +54,7 @@ describe('mensagens de notificação', () => {
     const base = {
       appointmentId: APPOINTMENT,
       donorId: DONOR,
-      unitName: 'Pulso Unidade Centro',
+      unitName: 'SangueConecta Unidade Centro',
       startsAt: '2026-10-16T12:30:00.000Z',
     };
     const byDonor = expectSafe(messages.appointmentCancelled({ ...base, cancelledBy: 'DONOR' }));
@@ -67,7 +69,7 @@ describe('mensagens de notificação', () => {
     const data = {
       appointmentId: APPOINTMENT,
       donorId: DONOR,
-      unitName: 'Pulso Unidade Centro',
+      unitName: 'SangueConecta Unidade Centro',
       startsAt: '2026-10-17T12:00:00.000Z',
     };
     expect(expectSafe(messages.appointmentReminder(data, '2026-10-17')).title).toBe(

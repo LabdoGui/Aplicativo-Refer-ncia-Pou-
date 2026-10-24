@@ -28,7 +28,11 @@ export function DonorLayout() {
 
       <div className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r border-line bg-surface lg:flex">
         <div className="flex h-16 items-center px-6">
-          <Link to="/app" aria-label="Pulso — início da área do doador" className="rounded-control">
+          <Link
+            to="/app"
+            aria-label="SangueConecta — início da área do doador"
+            className="rounded-control"
+          >
             <Logo />
           </Link>
         </div>
@@ -42,7 +46,7 @@ export function DonorLayout() {
         <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-line bg-canvas/90 px-4 backdrop-blur sm:px-6 lg:px-8">
           <Link
             to="/app"
-            aria-label="Pulso — início da área do doador"
+            aria-label="SangueConecta — início da área do doador"
             className="rounded-control lg:hidden"
           >
             <Logo size="sm" />

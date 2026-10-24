@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Sobe o Pulso inteiro dentro do Codespace (docker compose) e mostra o link do
+# Sobe o SangueConecta inteiro dentro do Codespace (docker compose) e mostra o link do
 # app. Roda a cada início do Codespace; da segunda vez em diante usa o cache e
 # os dados já gravados nos volumes.
 set -euo pipefail
@@ -19,16 +19,16 @@ fi
 # Link e QR code de verificação das declarações em PDF apontam para o Codespace.
 export PUBLIC_APP_URL="${PUBLIC_APP_URL:-$url}"
 
-echo "▶ Pulso: aguardando o Docker do Codespace..."
+echo "▶ SangueConecta: aguardando o Docker do Codespace..."
 for _ in $(seq 1 60); do
   docker info >/dev/null 2>&1 && break
   sleep 2
 done
 
-echo "▶ Pulso: subindo o app (a primeira vez leva alguns minutos)..."
+echo "▶ SangueConecta: subindo o app (a primeira vez leva alguns minutos)..."
 if ! docker compose up -d --build --wait; then
   echo
-  echo "✘ O Pulso não subiu. Veja os logs com: docker compose logs --tail=50"
+  echo "✘ O SangueConecta não subiu. Veja os logs com: docker compose logs --tail=50"
   echo "  e tente de novo com: bash .devcontainer/start.sh"
   exit 1
 fi
@@ -50,7 +50,7 @@ fi
 
 cat <<EOF
 
-✔ Pulso no ar: ${url}
+✔ SangueConecta no ar: ${url}
 ${visibility:+  Link ${visibility}.
 }
   Contas de demonstração (senha Pulso@2026):

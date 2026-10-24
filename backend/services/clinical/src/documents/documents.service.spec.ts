@@ -45,7 +45,7 @@ function setup(attendance: Record<string, unknown> | null) {
 const completed = {
   id: 'att-1',
   donorId: 'd1',
-  unitName: 'Pulso Unidade Centro',
+  unitName: 'SangueConecta Unidade Centro',
   completedAt: new Date('2026-10-17T13:00:00Z'),
   createdAt: new Date('2026-10-17T12:10:00Z'),
   donation: { status: 'COMPLETED' },
@@ -77,7 +77,7 @@ describe('DocumentsService', () => {
     expect(verification).toMatchObject({
       valid: true,
       holderInitials: 'M. A. S.',
-      unitName: 'Pulso Unidade Centro',
+      unitName: 'SangueConecta Unidade Centro',
       attendanceDate: '2026-10-17',
     });
   });

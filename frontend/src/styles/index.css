@@ -1,7 +1,7 @@
 @import 'tailwindcss';
 
 /*
- * Tokens de design do Pulso (docs/12 — Identidade visual).
+ * Tokens de design do SangueConecta (docs/12 — Identidade visual).
  *
  * Regras de uso:
  * - Carmim é a cor da MARCA: só em CTAs principais e detalhes de marca. Nunca para status.
@@ -17,6 +17,11 @@
 
   --color-white: #ffffff;
   --color-black: #000000;
+
+  /* Cores da logo (docs/marca): símbolo e nome "Sangue" + "Conecta". */
+  --color-marca-vermelho: #d30a04;
+  --color-marca-azul: #215f8f;
+  --color-marca-claro: #e4e3e5;
 
   /* Carmim Vital — marca (base 700 = #A3123A, contraste 7,8:1 com branco). */
   --color-carmim-50: #fdf2f5;

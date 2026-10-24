@@ -46,7 +46,7 @@ describe('convenções HTTP do bootstrap (corpo e cache)', () => {
       controllers: [FakeController],
       providers: [{ provide: APP_FILTER, useClass: ProblemDetailsFilter }],
     }).compile();
-    // Mesma sequência do bootstrapService: parsers do Nest desligados e os do Pulso registrados.
+    // Mesma sequência do bootstrapService: parsers do Nest desligados e os do SangueConecta registrados.
     app = moduleRef.createNestApplication<NestExpressApplication>({
       logger: false,
       bodyParser: false,

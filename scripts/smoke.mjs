@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Smoke test do ambiente do Pulso (Node 22, sem dependências).
+ * Smoke test do ambiente do SangueConecta (Node 22, sem dependências).
  *
  * Confere, pela mesma porta que o navegador usa (nginx), se o frontend, o
  * gateway, os 6 serviços, o banco, o broker e a documentação estão no ar.
@@ -99,9 +99,9 @@ async function checkFrontend() {
       summary: `GET / não devolveu HTML (Content-Type: ${res.contentType || 'ausente'})`,
     };
   }
-  if (!res.text.includes('Pulso'))
-    return { ok: false, summary: 'o HTML de GET / não contém "Pulso"' };
-  return { ok: true, summary: `GET / devolve o HTML do Pulso (${res.ms} ms)` };
+  if (!res.text.includes('SangueConecta'))
+    return { ok: false, summary: 'o HTML de GET / não contém "SangueConecta"' };
+  return { ok: true, summary: `GET / devolve o HTML do SangueConecta (${res.ms} ms)` };
 }
 
 async function checkServicesHealth() {
@@ -207,7 +207,7 @@ async function runWithRetry(check, deadline) {
 async function main() {
   const startedAt = Date.now();
   const deadline = startedAt + TIMEOUT_SECONDS * 1000;
-  console.log(bold('Pulso — smoke test'));
+  console.log(bold('SangueConecta — smoke test'));
   console.log(dim(`Alvo: ${BASE_URL} · espera máxima: ${TIMEOUT_SECONDS} s\n`));
 
   let failures = 0;

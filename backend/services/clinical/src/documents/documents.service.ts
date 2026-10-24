@@ -157,7 +157,7 @@ export class DocumentsService {
       document.type === 'DONATION_DECLARATION' ? 'declaracao-doacao' : 'declaracao-comparecimento';
     return {
       pdf: Buffer.from(document.pdf),
-      filename: `pulso-${kind}-${document.attendanceDate.toISOString().slice(0, 10)}.pdf`,
+      filename: `sangueconecta-${kind}-${document.attendanceDate.toISOString().slice(0, 10)}.pdf`,
       sha256: document.sha256,
     };
   }

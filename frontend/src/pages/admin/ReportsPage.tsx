@@ -63,7 +63,7 @@ export function ReportsPage() {
         if (current * result.pageSize >= result.total) break;
       }
       downloadCsv(
-        `pulso-doacoes-${suffix}.csv`,
+        `sangueconecta-doacoes-${suffix}.csv`,
         ['Data', 'Código', 'Situação', 'Tipo sanguíneo', 'Volume (mL)', 'Unidade', 'Campanha'],
         rows
           .slice(0, EXPORT_LIMIT)
@@ -185,19 +185,19 @@ export function ReportsPage() {
                   title="Doações por unidade"
                   columns={['Unidade', 'Doações']}
                   rows={byUnit.map((r) => [r.unitName, r.count])}
-                  filename={`pulso-doacoes-por-unidade-${suffix}.csv`}
+                  filename={`sangueconecta-doacoes-por-unidade-${suffix}.csv`}
                 />
                 <SummaryTable
                   title="Doações por tipo sanguíneo"
                   columns={['Tipo', 'Doações']}
                   rows={byType.map((r) => [BLOOD_TYPE_LABELS[r.bloodType], r.count])}
-                  filename={`pulso-doacoes-por-tipo-${suffix}.csv`}
+                  filename={`sangueconecta-doacoes-por-tipo-${suffix}.csv`}
                 />
                 <SummaryTable
                   title="Agendamentos por situação"
                   columns={['Situação', 'Agendamentos']}
                   rows={byStatus.map(([s, count]) => [APPOINTMENT_STATUS_LABELS[s], count])}
-                  filename={`pulso-agendamentos-por-situacao-${suffix}.csv`}
+                  filename={`sangueconecta-agendamentos-por-situacao-${suffix}.csv`}
                 />
               </div>
             </div>

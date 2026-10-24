@@ -8,7 +8,7 @@ export const CONSENT_CATALOG: Record<
   TERMS_PRIVACY: {
     title: 'Termos de Uso e Política de Privacidade',
     description:
-      'Necessário para usar o Pulso: tratamos seus dados de cadastro para agendar doações e registrar seu histórico.',
+      'Necessário para usar o SangueConecta: tratamos seus dados de cadastro para agendar doações e registrar seu histórico.',
     required: true,
   },
   COMMUNICATIONS: {

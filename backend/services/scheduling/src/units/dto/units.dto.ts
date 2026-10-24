@@ -40,7 +40,7 @@ export class IncludeInactiveQueryDto {
 }
 
 export class UnitInputDto implements UnitInput {
-  @ApiProperty({ example: 'Pulso Unidade Centro' })
+  @ApiProperty({ example: 'SangueConecta Unidade Centro' })
   @Transform(trim)
   @IsString()
   @MinLength(3)

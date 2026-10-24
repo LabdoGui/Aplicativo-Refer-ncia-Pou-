@@ -151,9 +151,9 @@ export function RegisterPage() {
         />
         {underage && (
           <Alert tone="warn" role="status">
-            O cadastro no Pulso é para maiores de {MIN_DONOR_AGE} anos. Se você tem 16 ou 17 anos,
-            procure diretamente uma unidade de coleta: lá a equipe orienta sobre a autorização do
-            responsável.
+            O cadastro no SangueConecta é para maiores de {MIN_DONOR_AGE} anos. Se você tem 16 ou 17
+            anos, procure diretamente uma unidade de coleta: lá a equipe orienta sobre a autorização
+            do responsável.
           </Alert>
         )}
         <TextField

@@ -2,7 +2,7 @@
   "name": "pulso",
   "version": "0.1.0",
   "private": true,
-  "description": "Pulso — plataforma de apoio à doação de sangue (projeto acadêmico, ODS 3)",
+  "description": "SangueConecta — plataforma de apoio à doação de sangue (projeto acadêmico, ODS 3)",
   "license": "MIT",
   "engines": {
     "node": ">=22"

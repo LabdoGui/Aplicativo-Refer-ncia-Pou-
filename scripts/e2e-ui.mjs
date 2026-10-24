@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Jornada de ponta a ponta do Pulso pelo NAVEGADOR (Playwright): os mesmos 22
+ * Jornada de ponta a ponta do SangueConecta pelo NAVEGADOR (Playwright): os mesmos 22
  * passos do critério de aceite de scripts/e2e-journey.mjs, mas clicando nas
  * telas como uma pessoa faria. Confere também que nenhuma tela registra erro
  * no console e que a verificação pública do documento não expõe o nome.
@@ -35,7 +35,7 @@ const routeOf = (url) => (DEMO ? url.hash.slice(1).split('?')[0] || '/' : url.pa
 const SHOTS = process.env.E2E_SCREENSHOTS;
 const DEMO_PASSWORD = 'Pulso@2026';
 const DONOR_PASSWORD = 'Senha1234';
-const CENTRO_UNIT_NAME = 'Pulso Unidade Centro';
+const CENTRO_UNIT_NAME = 'SangueConecta Unidade Centro';
 
 if (SHOTS) mkdirSync(SHOTS, { recursive: true });
 

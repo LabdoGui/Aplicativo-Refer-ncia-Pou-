@@ -1,30 +1,27 @@
 import { cn } from '@/lib/cn';
+import { SYMBOL_DROP_PATH, SYMBOL_FIGURES_PATH, SYMBOL_VIEWBOX } from './symbol-paths';
 
 export type LogoTone = 'brand' | 'white';
 
 interface LogoMarkProps {
-  tone?: LogoTone;
   className?: string;
 }
 
 /**
- * Símbolo do Pulso (docs/12, item 14.6): gota de traço contínuo cuja base é
- * atravessada por uma linha de pulso que sobe para a direita e sai da gota.
- * Decorativo: o nome acessível fica no texto ou no link que o contém.
+ * Símbolo do SangueConecta: gota vermelha com duas pessoas cujos braços formam
+ * um coração (docs/marca). Sempre nas cores da marca, que funcionam em fundo
+ * claro e escuro. Decorativo: o nome acessível fica no texto ou no link.
  */
-export function LogoMark({ tone = 'brand', className }: LogoMarkProps) {
+export function LogoMark({ className }: LogoMarkProps) {
   return (
     <svg
-      viewBox="0 0 32 32"
-      fill="none"
+      viewBox={SYMBOL_VIEWBOX}
       aria-hidden="true"
       focusable="false"
-      className={cn('shrink-0', tone === 'brand' ? 'text-carmim-700' : 'text-white', className)}
+      className={cn('h-8 w-auto shrink-0', className)}
     >
-      <g stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round">
-        <path d="M16 3.5c-2.75 3.4-8.5 10.1-8.5 15.25a8.5 8.5 0 0 0 17 0C24.5 13.6 18.75 6.9 16 3.5z" />
-        <path d="M3 21h6.5l2.5-4.75 3.25 7.5 3-6.25L29 9.5" />
-      </g>
+      <path d={SYMBOL_DROP_PATH} className="fill-marca-vermelho" />
+      <path d={SYMBOL_FIGURES_PATH} className="fill-marca-claro" />
     </svg>
   );
 }

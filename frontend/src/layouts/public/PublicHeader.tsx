@@ -41,9 +41,9 @@ export function PublicHeader() {
 
   return (
     <header className="sticky top-0 z-30 border-b border-line/70 bg-canvas/90 backdrop-blur">
-      <div className="mx-auto flex h-16 max-w-page items-center gap-3 px-4 sm:px-6 md:gap-6">
-        <Link to="/" aria-label="Pulso — página inicial" className="rounded-control">
-          <Logo />
+      <div className="mx-auto flex h-16 max-w-page items-center gap-2 px-4 sm:gap-3 sm:px-6 md:gap-6">
+        <Link to="/" aria-label="SangueConecta — página inicial" className="rounded-control">
+          <Logo collapsible />
         </Link>
 
         <nav aria-label="Principal" className="hidden md:block">

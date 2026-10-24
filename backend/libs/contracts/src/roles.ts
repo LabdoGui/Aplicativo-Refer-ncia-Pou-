@@ -1,5 +1,5 @@
 /**
- * Papéis e permissões do Pulso.
+ * Papéis e permissões do SangueConecta.
  *
  * Os quatro papéis são fixos, por isso ficam em código (versionado e testado)
  * em vez de tabelas `roles`/`permissions` (ver docs/16, decisão D5).

@@ -5,7 +5,7 @@
 
 | # | Slide | Conteúdo essencial | Visual sugerido | Fonte |
 |---|---|---|---|---|
-| 1 | **Título** | Pulso: "Doe sangue. Mantenha a vida pulsando." Integrantes, curso, orientador, data | Logotipo + foto de pessoas (sem agulhas) | [12](12-identidade-visual.md) |
+| 1 | **Título** | SangueConecta: "Conectando doadores a vidas que precisam de ajuda." Integrantes, curso, orientador, data | Logotipo + foto de pessoas (sem agulhas) | [12](12-identidade-visual.md) |
 | 2 | **ODS relacionado** | ODS 3, com contribuição principal às metas 3.8 e 3.d e indireta às 3.1 e 3.6. Deixar claro que é contribuição **indireta** | Ícone oficial do ODS 3 + 4 metas | [01](01-visao-geral-problema-ods.md), Parte 3 |
 | 3 | **Problema** | Só 1,6% da população doou em 2023 (MS); inconveniência, falta de informação e medo são barreiras (Bednall & Bove, 2011); a retenção é o desafio (Masser et al., 2008) | 3 números/ícones grandes com a fonte no rodapé | [01](01-visao-geral-problema-ods.md), Parte 2 |
 | 4 | **Público-alvo** | 3 personas principais: Ana (1ª doação), Carlos (recorrente), Juliana (profissional) + gestora | Cards de persona | [02](02-personas-e-jornada.md) |
@@ -22,7 +22,7 @@
 | 15 | **Pesquisa e fontes** | Perguntas de pesquisa + 4 categorias de fontes + regra "sem fonte primária, sem slide" | Tabela de fontes | [11](11-pesquisa-benchmarking.md), Parte 12 |
 | 16 | **Benchmarking** | Instituições contatadas (status), roteiro de entrevista, apps analisados; ética (CEP, TCLE) | Matriz de comparação (prévia) | [11](11-pesquisa-benchmarking.md), Parte 13 |
 | 17 | **Identidade visual** | Nome, slogan, paleta (com a separação marca × crítico), tipografia, 3 telas do Figma | Mockups | [12](12-identidade-visual.md) |
-| 18 | **Diferenciais** | Regras como dados versionados; gamificação ética; metas coletivas; comprovante verificável; Pulso do Estoque | 5 ícones | [14](14-riscos-diferenciais-recomendacoes.md), Parte 29 |
+| 18 | **Diferenciais** | Regras como dados versionados; gamificação ética; metas coletivas; comprovante verificável; SangueConecta do Estoque | 5 ícones | [14](14-riscos-diferenciais-recomendacoes.md), Parte 29 |
 | 19 | **MVP** | A "história do MVP" em uma frase + o que fica para a V2 e o Futuro | Funil MVP → V2 → Futuro | [13](13-mvp-roadmap.md), Parte 15 |
 | 20 | **Próximos passos** | Roadmap por sprint, entrevistas agendadas, validações pendentes com profissionais (as 10 perguntas) | Gantt resumido | [13](13-mvp-roadmap.md), Parte 16 |
 | A | *Apêndice* | Riscos (top 6), matriz de microsserviços, API (endpoints-chave), ER lógico | — | [06](06-arquitetura.md), [07](07-banco-de-dados.md), [09](09-api.md), [14](14-riscos-diferenciais-recomendacoes.md) |

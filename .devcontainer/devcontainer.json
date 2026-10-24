@@ -1,8 +1,8 @@
 {
-  // GitHub Codespaces: abre o Pulso completo na nuvem, sem instalar nada.
+  // GitHub Codespaces: abre o SangueConecta completo na nuvem, sem instalar nada.
   // Ao iniciar, .devcontainer/start.sh sobe tudo com o docker compose e mostra
   // o link do app (porta 8080) no terminal.
-  "name": "Pulso",
+  "name": "SangueConecta",
   "image": "mcr.microsoft.com/devcontainers/javascript-node:1-22-bookworm",
   "features": {
     "ghcr.io/devcontainers/features/docker-in-docker:2": {},
@@ -13,7 +13,7 @@
   "hostRequirements": { "cpus": 4, "memory": "8gb" },
   "forwardPorts": [8080],
   "portsAttributes": {
-    "8080": { "label": "Pulso", "onAutoForward": "notify" }
+    "8080": { "label": "SangueConecta", "onAutoForward": "notify" }
   },
   // Banco, broker e serviços internos ficam só dentro do Codespace.
   "otherPortsAttributes": { "onAutoForward": "ignore" },

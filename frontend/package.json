@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Frontend React do Pulso (doador, equipe e administração)",
+  "description": "Frontend React do SangueConecta (doador, equipe e administração)",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",

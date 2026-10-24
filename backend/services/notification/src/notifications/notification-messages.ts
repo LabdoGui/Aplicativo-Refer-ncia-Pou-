@@ -59,7 +59,7 @@ export function welcome(data: UserRegisteredData): NotificationDraft | null {
   return draft(
     data.userId,
     'WELCOME',
-    'Boas-vindas ao Pulso',
+    'Boas-vindas ao SangueConecta',
     `${name ? `Olá, ${name}! ` : ''}Faça a pré-triagem informativa e agende sua doação quando quiser.`,
     '/app',
   );
