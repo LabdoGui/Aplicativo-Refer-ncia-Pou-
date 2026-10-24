@@ -116,3 +116,50 @@ jobs:
       - name: Derrubar o ambiente
         if: always()
         run: docker compose down -v
+
+  demo:
+    name: Demonstração no navegador (jornada E2E)
+    # A demonstração roda o mesmo front-end com um servidor simulado na página
+    # (frontend/src/demo). Sem Docker: só o build de arquivo único e os 22 passos.
+    needs: build-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v4
+
+      - name: Instalar o Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Instalar dependências e o Playwright
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Construir a demonstração (arquivo único)
+        run: npm run build:demo -w @pulso/frontend
+
+      - name: Servir a demonstração
+        working-directory: frontend
+        run: |
+          nohup npx vite preview --mode demo --port 4173 --strictPort > /tmp/vite-preview.log 2>&1 &
+          for _ in $(seq 1 30); do curl -sf http://localhost:4173/demo.html > /dev/null && exit 0; sleep 1; done
+          cat /tmp/vite-preview.log
+          exit 1
+
+      - name: Jornada E2E pelo navegador na demonstração (22 passos)
+        run: npm run e2e:ui
+        env:
+          BASE_URL: http://localhost:4173/demo.html
+          E2E_SCREENSHOTS: e2e-demo-capturas
+
+      - name: Capturas da jornada na demonstração (em caso de falha)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-demo-capturas
+          path: e2e-demo-capturas
+          if-no-files-found: ignore

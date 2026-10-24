@@ -11,7 +11,7 @@ export interface SessionState {
   status: SessionStatus;
   user: SessionUser | null;
   /** Motivo da última saída involuntária (exibido na tela de login). */
-  endedReason: 'expired' | null;
+  endedReason: 'expired' | 'account-deleted' | null;
 }
 
 let state: SessionState = { status: 'loading', user: null, endedReason: null };
@@ -93,15 +93,23 @@ async function renew(isRetry = false): Promise<string | null> {
   }
 }
 
+/** Cookie indicador de sessão. Em contextos sem cookies (iframe isolado), não há. */
+function hasSessionHint(): boolean {
+  try {
+    return document.cookie
+      .split(';')
+      .some((item) => item.trim() === `${SESSION_HINT_COOKIE_NAME}=1`);
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Restaura a sessão ao abrir o app. Sem o cookie indicador não há sessão a
  * restaurar: o visitante fica anônimo sem chamar /auth/refresh.
  */
 export function restoreSession(): Promise<string | null> {
-  const hasHint = document.cookie
-    .split(';')
-    .some((item) => item.trim() === `${SESSION_HINT_COOKIE_NAME}=1`);
-  if (!hasHint) {
+  if (!hasSessionHint()) {
     clearSession();
     return Promise.resolve(null);
   }

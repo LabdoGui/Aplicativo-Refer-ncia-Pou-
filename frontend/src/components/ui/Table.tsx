@@ -15,7 +15,14 @@ export function Table({
   className?: string;
 }) {
   return (
-    <div className={cn('overflow-x-auto rounded-card border border-line bg-surface', className)}>
+    // relative: rótulos só para leitor de tela (sr-only, posição absoluta) ficam presos à
+    // rolagem horizontal em vez de alargar a página no celular.
+    <div
+      className={cn(
+        'relative overflow-x-auto rounded-card border border-line bg-surface',
+        className,
+      )}
+    >
       <table className="w-full min-w-[40rem] border-collapse text-left text-sm">
         <caption className="sr-only">{caption}</caption>
         {children}

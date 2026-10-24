@@ -2,8 +2,10 @@
 
 > **Doe sangue. Mantenha a vida pulsando.**
 
-[![CI](https://github.com/LabdoGui/Aplicativo-Refer-ncia-Pou-/actions/workflows/ci.yml/badge.svg)](https://github.com/LabdoGui/Aplicativo-Refer-ncia-Pou-/actions/workflows/ci.yml)
-[![Abrir no GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/LabdoGui/Aplicativo-Refer-ncia-Pou-?quickstart=1)
+[![CI](https://github.com/LabdoGui/Reposit-rioFMU/actions/workflows/ci.yml/badge.svg)](https://github.com/LabdoGui/Reposit-rioFMU/actions/workflows/ci.yml)
+[![Abrir no GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/LabdoGui/Reposit-rioFMU?quickstart=1)
+
+**Experimente no celular ou no computador, sem instalar nada:** <https://labdogui.github.io/Reposit-rioFMU/pulso/> (demonstração no navegador com dados fictícios; contas na seção [Contas de demonstração](#contas-de-demonstração), senha `Pulso@2026`).
 
 O **Pulso** é uma plataforma web responsiva (PWA) de apoio à doação de sangue. Ela acompanha a jornada de quem doa (descoberta, cadastro, pré-triagem informativa, agendamento, lembretes, atendimento, pós-doação e incentivo à recorrência) e oferece à equipe de coleta e à gestão ferramentas para organizar a agenda, registrar o atendimento e acompanhar o estoque de sangue.
 
@@ -127,16 +129,28 @@ Por que 6 serviços e não 11, como os eventos fluem e as decisões tomadas: [do
 
 ### Sem instalar nada: GitHub Codespaces
 
-1. Clique no botão **Abrir no GitHub Codespaces** no topo desta página (ou abra <https://codespaces.new/LabdoGui/Aplicativo-Refer-ncia-Pou-?quickstart=1>) e confirme em **Create codespace**. Precisa de uma conta do GitHub; o plano gratuito inclui horas de Codespaces todo mês.
+1. Clique no botão **Abrir no GitHub Codespaces** no topo desta página (ou abra <https://codespaces.new/LabdoGui/Reposit-rioFMU?quickstart=1>) e confirme em **Create codespace**. Precisa de uma conta do GitHub; o plano gratuito inclui horas de Codespaces todo mês.
 2. O editor abre no navegador e o terminal mostra o app subindo (`.devcontainer/start.sh`). Da primeira vez leva alguns minutos.
 3. No fim, o terminal mostra **"Pulso no ar"** com o link `https://<nome-do-codespace>-8080.app.github.dev`. O link fica público quando a conta permite, e aí abre em qualquer celular ou computador; se não, a aba **PORTAS** permite torná-lo público (botão direito na porta 8080 → Visibilidade da porta → Pública).
 
 O Codespace desliga sozinho depois de 30 minutos sem uso e o link para de abrir. Para religar, abra o Codespace de novo pela página do repositório (**Code → Codespaces**): o app volta em menos de um minuto, com os mesmos dados. Para não gastar as horas gratuitas, apague o Codespace quando não precisar mais dele.
 
+### Demonstração no navegador (sem servidor)
+
+Para mostrar o app num celular sem subir nada, existe uma demonstração em um **único arquivo HTML**: o mesmo front-end, com um servidor simulado dentro da própria página ([`frontend/src/demo`](frontend/src/demo)) que responde às rotas `/api/v1` com os mesmos dados fictícios do seed e as mesmas regras do back-end (pré-triagem, agenda, triagem, doação, pontos, conquistas, estoque, notificações, auditoria).
+
+```bash
+npm ci
+npm run build:demo -w @pulso/frontend   # gera frontend/dist-demo/demo.html (~2,6 MB)
+npm run dev:demo -w @pulso/frontend     # ou: versão de desenvolvimento em /demo.html
+```
+
+A versão publicada fica em <https://labdogui.github.io/Reposit-rioFMU/pulso/> (GitHub Pages, branch `gh-pages`, pasta `pulso/`). O arquivo abre com dois cliques no navegador ou publicado em qualquer hospedagem estática; as rotas ficam depois do `#` (ex.: `demo.html#/admin`). As contas de demonstração são as mesmas. O que a pessoa faz fica só naquele aparelho (localStorage), recomeça a cada dia e pode ser apagado pelo botão **Recomeçar** do aviso. A jornada de 22 passos roda também na demonstração (`BASE_URL=http://localhost:4173/demo.html npm run e2e:ui`, com `npx vite preview --mode demo` em `frontend/`), e o CI a executa a cada push. O build normal do app (`npm run build`) não inclui nada da demonstração.
+
 ### No seu computador
 
 ```bash
-git clone https://github.com/LabdoGui/Aplicativo-Refer-ncia-Pou-.git pulso
+git clone https://github.com/LabdoGui/Reposit-rioFMU.git pulso
 cd pulso
 docker compose up --build
 ```

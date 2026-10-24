@@ -46,7 +46,8 @@ export function ScheduleRulesEditor({ unitId }: { unitId: string }) {
         novas reservas.
       </p>
       <QueryState isLoading={rules.isLoading} error={rules.error} onRetry={() => rules.refetch()}>
-        <div className="mt-4 overflow-x-auto">
+        {/* relative: os rótulos sr-only das células ficam presos à rolagem horizontal. */}
+        <div className="relative mt-4 overflow-x-auto">
           <table className="w-full min-w-[44rem] text-sm">
             <caption className="sr-only">Regras da grade semanal</caption>
             <thead className="text-left text-xs tracking-wide text-ink-muted uppercase">

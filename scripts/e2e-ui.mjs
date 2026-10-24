@@ -14,6 +14,10 @@
  *   BASE_URL=http://localhost:5173 npm run e2e:ui    # frontend do Vite
  *   E2E_SCREENSHOTS=./capturas npm run e2e:ui        # uma captura por passo
  *   E2E_HEADED=1 npm run e2e:ui                      # com a janela visível
+ *   BASE_URL=http://localhost:4173/demo.html npm run e2e:ui   # demonstração no navegador
+ *
+ * Com BASE_URL terminando em .html, roda contra a demonstração (vite build
+ * --mode demo): rotas depois do # e a sessão guardada na própria página.
  *
  * Variáveis: PLAYWRIGHT_CHROMIUM_PATH aponta um Chromium já instalado.
  * Sai com código 1 no primeiro passo que falhar (com captura da tela).
@@ -23,6 +27,11 @@ import { join } from 'node:path';
 import { chromium } from 'playwright';
 
 const BASE_URL = (process.env.BASE_URL ?? 'http://localhost:8080').replace(/\/$/, '');
+const DEMO = BASE_URL.endsWith('.html');
+/** Endereço de uma rota do app (na demonstração, depois do #). */
+const to = (path) => (DEMO ? `${BASE_URL}#${path}` : `${BASE_URL}${path}`);
+/** Rota atual do app a partir da URL da página (sem a query). */
+const routeOf = (url) => (DEMO ? url.hash.slice(1).split('?')[0] || '/' : url.pathname);
 const SHOTS = process.env.E2E_SCREENSHOTS;
 const DEMO_PASSWORD = 'Pulso@2026';
 const DONOR_PASSWORD = 'Senha1234';
@@ -72,17 +81,19 @@ function assert(condition, message) {
 }
 
 async function login(email, password = DEMO_PASSWORD) {
-  await page.goto(`${BASE_URL}/entrar`);
+  await page.goto(to(`/entrar`));
   await page.getByLabel('E-mail').fill(email);
   await page.locator('input[name=password]').fill(password);
   await page.getByRole('button', { name: 'Entrar' }).click();
-  await page.waitForURL((url) => !url.pathname.startsWith('/entrar'));
+  await page.waitForURL((url) => !routeOf(url).startsWith('/entrar'));
 }
 
 /** Sai como faria outra pessoa no mesmo navegador: sem cookies de sessão. */
 async function logout() {
   await context.clearCookies();
-  await page.goto(`${BASE_URL}/`);
+  await page.goto(to(`/`));
+  // Na demonstração, ir para outro # não recarrega a página (a sessão fica na memória).
+  if (DEMO) await page.reload();
 }
 
 /** Dia e horário são blocos: o rádio fica oculto e a pessoa clica no bloco. */
@@ -99,7 +110,7 @@ console.log(`Jornada E2E pelo navegador em ${BASE_URL}\n`);
 // --- Doador ----------------------------------------------------------------
 await check('cadastrar um doador', async () => {
   // A página inicial mostra a situação pública dos estoques (sem login).
-  await page.goto(`${BASE_URL}/`);
+  await page.goto(to(`/`));
   await page.getByText('Como está o estoque de sangue').waitFor();
   await page.getByText(/Carregando a situação dos estoques/).waitFor({ state: 'hidden' });
   await page.getByRole('link', { name: 'Quero doar' }).first().click();
@@ -120,11 +131,11 @@ await check('fazer login', async () => {
   await logout();
   await login(email, DONOR_PASSWORD);
   await page.getByRole('heading', { name: /^Olá, / }).waitFor();
-  return new URL(page.url()).pathname;
+  return routeOf(new URL(page.url()));
 });
 
 await check('responder a pré-triagem', async () => {
-  await page.goto(`${BASE_URL}/app/pre-triagem`);
+  await page.goto(to(`/app/pre-triagem`));
   // Respostas que não disparam regras (doador sem impedimentos declarados).
   const answerYes = /pesa 50|sentindo bem|dormiu|alimentou/i;
   for (let index = 1; index <= 6; index++) {
@@ -151,7 +162,7 @@ await check('responder a pré-triagem', async () => {
 });
 
 await check('escolher uma unidade', async () => {
-  await page.goto(`${BASE_URL}/app/agendar`);
+  await page.goto(to(`/app/agendar`));
   await page.getByRole('radio', { name: new RegExp(`^${CENTRO_UNIT_NAME}`) }).check();
   await page.getByRole('button', { name: 'Continuar' }).click();
   await page.getByRole('region', { name: 'Escolha o dia' }).waitFor();
@@ -185,7 +196,7 @@ await check('escolher o horário', async () => {
 
 await check('confirmar o agendamento', async () => {
   await page.getByRole('button', { name: 'Confirmar agendamento' }).click();
-  await page.waitForURL((url) => /^\/app\/agendamentos\/[0-9a-f-]+$/.test(url.pathname));
+  await page.waitForURL((url) => /^\/app\/agendamentos\/[0-9a-f-]+$/.test(routeOf(url)));
   await page
     .getByText(/AG-[A-Z0-9]{6}/)
     .first()
@@ -243,9 +254,9 @@ await check('entrar novamente como doador', async () => {
 });
 
 await check('visualizar a doação no histórico', async () => {
-  await page.goto(`${BASE_URL}/app/doacoes`);
+  await page.goto(to(`/app/doacoes`));
   await page.getByRole('region', { name: 'Histórico' }).getByRole('link').first().click();
-  await page.waitForURL((url) => /^\/app\/doacoes\/[0-9a-f-]+$/.test(url.pathname));
+  await page.waitForURL((url) => /^\/app\/doacoes\/[0-9a-f-]+$/.test(routeOf(url)));
   ctx.donationUrl = page.url();
   await page.getByText('450 mL').waitFor();
   const code = (await page.locator('main').innerText()).match(/DO-[A-Z0-9]{6}/)?.[0];
@@ -254,7 +265,7 @@ await check('visualizar a doação no histórico', async () => {
 });
 
 await check('receber pontos', async () => {
-  await page.goto(`${BASE_URL}/app/conquistas`);
+  await page.goto(to(`/app/conquistas`));
   const level = page.getByRole('region', { name: 'Seu nível' });
   await level.getByText('100', { exact: true }).waitFor();
   await level.getByText('Doador', { exact: true }).first().waitFor();
@@ -285,7 +296,7 @@ await check('gerar documento', async () => {
   await viewer.close();
   // Verificação pública, sem login: confirma o documento só com as iniciais.
   const verify = await context.newPage();
-  await verify.goto(`${BASE_URL}/verificar/${code}`);
+  await verify.goto(to(`/verificar/${code}`));
   await verify
     .getByText(/autêntic/i)
     .first()
@@ -310,7 +321,7 @@ await check('visualizar o dashboard', async () => {
 });
 
 await check('visualizar o estoque', async () => {
-  await page.goto(`${BASE_URL}/admin/estoque`);
+  await page.goto(to(`/admin/estoque`));
   await page.getByRole('heading', { name: 'Níveis por tipo' }).waitFor();
   return 'níveis por tipo sanguíneo';
 });
@@ -338,17 +349,17 @@ await check('adicionar e remover estoque', async () => {
 });
 
 await check('visualizar os gráficos', async () => {
-  await page.goto(`${BASE_URL}/admin`);
+  await page.goto(to(`/admin`));
   const charts = page.locator('.recharts-surface');
   await charts.first().waitFor();
   return `${await charts.count()} gráficos no dashboard`;
 });
 
 await check('visualizar o histórico', async () => {
-  await page.goto(`${BASE_URL}/admin/estoque`);
+  await page.goto(to(`/admin/estoque`));
   const movements = page.getByRole('table').last();
   await movements.getByRole('row').nth(1).waitFor();
-  await page.goto(`${BASE_URL}/admin/auditoria`);
+  await page.goto(to(`/admin/auditoria`));
   await page.getByRole('table').getByRole('row').nth(1).waitFor();
   return 'movimentações do estoque e trilha de auditoria';
 });
